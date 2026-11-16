@@ -7,6 +7,8 @@ import '../providers/profile_provider.dart';
 import '../../../shared/widgets/mioko_icons.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../core/utils/format.dart';
+import '../../lorebooks/providers/lorebooks_provider.dart';
+import '../../lorebooks/widgets/lorebook_tile.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -81,7 +83,7 @@ class ProfileScreen extends ConsumerWidget {
             _EmptyTab(text: 'У тебя пока нет подарков'),
             _EmptyTab(text: 'У тебя пока нет коллекций'),
             _EmptyTab(text: 'У тебя пока нет персон'),
-            _EmptyTab(text: 'У тебя пока нет лорбуков'),
+            _LorebooksTab(),
           ],
         ),
       ),
@@ -318,6 +320,63 @@ class _StatItem extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+// Свои лорбуки — как вкладка «Лорбуки» в профиле на сайте
+class _LorebooksTab extends ConsumerWidget {
+  const _LorebooksTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    // Снизу — плавающая панель вкладок
+    final bottom = MediaQuery.paddingOf(context).bottom + 16;
+
+    return ref
+        .watch(myLorebooksProvider)
+        .when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => ErrorView(
+            error: e,
+            compact: true,
+            onRetry: () => ref.invalidate(myLorebooksProvider),
+          ),
+          data: (m) => m.lorebooks.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(32, 0, 32, bottom),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'У тебя пока нет лорбуков',
+                          style: TextStyle(color: scheme.onSurfaceVariant),
+                        ),
+                        const SizedBox(height: 12),
+                        FilledButton.tonalIcon(
+                          onPressed: () => context.push('/lorebooks'),
+                          icon: const Icon(Icons.search_rounded),
+                          label: const Text('Найти лорбуки'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  padding: EdgeInsets.fromLTRB(16, 12, 16, bottom),
+                  itemCount: m.lorebooks.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  itemBuilder: (_, i) {
+                    final lb = m.lorebooks[i];
+                    return LorebookTile(
+                      lorebook: lb,
+                      showAuthor: false,
+                      onTap: () => context.push('/lorebook/${lb.publicId}'),
+                    );
+                  },
+                ),
+        );
   }
 }
 

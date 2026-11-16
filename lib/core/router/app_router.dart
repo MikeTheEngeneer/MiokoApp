@@ -15,6 +15,8 @@ import '../../features/personas/screens/personas_screen.dart';
 import '../../features/personas/screens/create_persona_screen.dart';
 import '../../features/catalog/screens/item_detail_screen.dart';
 import '../../features/search/screens/search_screen.dart';
+import '../../features/lorebooks/screens/lorebooks_screen.dart';
+import '../../features/lorebooks/screens/lorebook_screen.dart';
 import '../../shared/widgets/main_shell.dart';
 
 // Fade + лёгкий slide снизу — используется для всех push-переходов
@@ -97,6 +99,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/personas/new',
         pageBuilder: (_, _) => _buildPage(const CreatePersonaScreen()),
+      ),
+      GoRoute(
+        path: '/lorebooks',
+        pageBuilder: (_, _) => _buildPage(const LorebooksScreen()),
+      ),
+      GoRoute(
+        path: '/lorebook/:id',
+        pageBuilder: (_, state) =>
+            _buildPage(LorebookScreen(id: state.pathParameters['id']!)),
       ),
 
       // Только 4 корневых раздела живут внутри оболочки с плавающей панелью

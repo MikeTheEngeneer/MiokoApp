@@ -60,6 +60,7 @@
 - **Профиль** — аватар, статистика, баланс жемчужин и статус Wave
 - **Редактирование профиля** — имя, ник, описание и загрузка фото с камеры или из галереи
 - **Персоны** — создание с аватаром, удаление свайпом, лимит как на сайте
+- **Лорбуки** — поиск опубликованных, страница лорбука с записями, подключение «для всех чатов» и к персоне
 
 ### Тарифы и жемчужины
 - Тарифы Mioko Wave и пакеты жемчужин — цены приходят с сервера
@@ -222,6 +223,8 @@ allprojects {
 | Чаты | `GET /api/chats` |
 | Персоны | `GET` · `POST /api/personas` · `DELETE /api/personas/<id>` |
 | Баланс и тарифы | `GET /api/payments/me` · `GET /api/payments/config` |
+| Лорбуки | `GET /api/lorebooks/mine` · `GET /api/lorebooks/public?q=…&before=…` · `GET /api/lorebooks/<id>` · `GET /api/lorebooks/<id>/targets` |
+| Подключение лорбука | `GET` · `POST /api/lorebooks/places/<mine\|persona>/<me\|id персоны>` (`{lorebook}`) · `DELETE …/<id лорбука>` |
 
 </details>
 

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/api/api_client.dart';
 import '../../../shared/widgets/error_view.dart';
+import '../../lorebooks/widgets/persona_lorebook_sheet.dart';
 import '../models/persona.dart';
 import '../providers/personas_provider.dart';
 
@@ -268,6 +269,8 @@ class _PersonaCard extends StatelessWidget {
                     ),
                   ),
                 ],
+                const SizedBox(height: 6),
+                PersonaLorebookRow(personaId: persona.publicId),
               ],
             ),
           ),

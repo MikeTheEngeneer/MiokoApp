@@ -8,6 +8,7 @@ import '../../profile/providers/profile_provider.dart';
 import '../../chat/providers/chats_provider.dart';
 import '../../catalog/providers/catalog_provider.dart';
 import '../../personas/providers/personas_provider.dart';
+import '../../lorebooks/providers/lorebooks_provider.dart';
 
 // Состояние авторизации
 enum AuthStatus { unknown, authenticated, unauthenticated }
@@ -162,6 +163,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     _ref.invalidate(catalogSectionsProvider);
     _ref.invalidate(catalogAuthorsProvider);
     _ref.invalidate(personasProvider);
+    _ref.invalidate(myLorebooksProvider);
+    _ref.invalidate(lorebookPlaceProvider);
+    _ref.invalidate(lorebookProvider);
+    _ref.invalidate(lorebookTargetsProvider);
   }
 
   String _parseError(Object e) {

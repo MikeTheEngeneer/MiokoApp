@@ -48,7 +48,11 @@ class SettingsScreen extends ConsumerWidget {
                 label: 'Персоны',
                 onTap: () => context.push('/personas'),
               ),
-              _Tile(icon: Icons.book_outlined, label: 'Лорбуки', onTap: () {}),
+              _Tile(
+                icon: Icons.book_outlined,
+                label: 'Лорбуки',
+                onTap: () => context.push('/lorebooks'),
+              ),
               _Tile(icon: Icons.link, label: 'Способы входа', onTap: () {}),
 
               // ── Настройки приложения ──────────────────
