@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Фон заставки = фон приложения (surface светлой палитры сайта) -->
+    <color name="splash_bg">#F2F5FA</color>
+</resources>

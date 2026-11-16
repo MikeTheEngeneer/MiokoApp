@@ -174,13 +174,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   );
 });
 
-// Заставка на время проверки входа (обычно доли секунды)
+// Запасная заставка: обычно её закрывает системная (см. main.dart).
+// Логотип 160dp по центру — как у системной, чтобы переход был незаметен
 class _Splash extends StatelessWidget {
   const _Splash();
 
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: Theme.of(context).colorScheme.surface,
-    body: const Center(child: MiokoLogo(size: 88)),
+    body: const Center(child: MiokoLogo(size: 160)),
   );
 }

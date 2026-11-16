@@ -44,8 +44,6 @@ dependencies:
 
   # Виджет оплаты CloudPayments внутри приложения
   webview_flutter: ^4.14.1
-  wakelock_plus: ^1.5.2
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
