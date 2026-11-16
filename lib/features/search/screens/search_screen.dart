@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/widgets/avatar_image.dart';
+import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/pressable.dart';
 import '../../catalog/models/catalog_item.dart';
 import '../../catalog/providers/catalog_provider.dart';
@@ -103,11 +104,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       );
     }
     if (state.items.isEmpty && state.error != null) {
-      return _Message(
+      return ErrorView(
         key: const ValueKey('error'),
-        icon: Icons.cloud_off_outlined,
-        text: state.error!,
-        action: ('Повторить', () => _search(state.query)),
+        error: state.error,
+        onRetry: () => _search(state.query),
       );
     }
     if (state.items.isEmpty) {
@@ -279,7 +279,11 @@ class _Results extends StatelessWidget {
                   ? TextButton.icon(
                       onPressed: onRetry,
                       icon: const Icon(Icons.refresh),
-                      label: Text('${state.error} — повторить'),
+                      label: Text(
+                        isOfflineError(state.error)
+                            ? 'Нет интернета — повторить'
+                            : 'Не удалось загрузить ещё — повторить',
+                      ),
                     )
                   : const SizedBox.shrink(),
             ),
@@ -376,16 +380,10 @@ class _ResultCard extends StatelessWidget {
 }
 
 class _Message extends StatelessWidget {
-  const _Message({
-    super.key,
-    required this.icon,
-    required this.text,
-    this.action,
-  });
+  const _Message({super.key, required this.icon, required this.text});
 
   final IconData icon;
   final String text;
-  final (String, VoidCallback)? action;
 
   @override
   Widget build(BuildContext context) {
@@ -403,13 +401,6 @@ class _Message extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(color: scheme.onSurfaceVariant),
             ),
-            if (action != null) ...[
-              const SizedBox(height: 12),
-              FilledButton.tonal(
-                onPressed: action!.$2,
-                child: Text(action!.$1),
-              ),
-            ],
           ],
         ),
       ),

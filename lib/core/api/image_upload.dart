@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:dio/dio.dart';
 
 Future<String> uploadImage(Dio dio, File file) async {

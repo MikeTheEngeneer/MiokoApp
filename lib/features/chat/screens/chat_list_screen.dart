@@ -1,9 +1,11 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:material_ui/material_ui.dart' as material;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../models/chat.dart';
 import '../../../shared/models/media_avatar.dart';
 import '../../../shared/widgets/avatar_image.dart';
+import '../../../shared/widgets/error_view.dart';
 import '../providers/chats_provider.dart';
 
 class ChatListScreen extends ConsumerWidget {
@@ -14,9 +16,7 @@ class ChatListScreen extends ConsumerWidget {
     final chatsAsync = ref.watch(chatsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Чаты'),
-      ),
+      appBar: AppBar(title: const Text('Чаты')),
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
         child: chatsAsync.when(
@@ -24,22 +24,10 @@ class ChatListScreen extends ConsumerWidget {
             key: ValueKey('loading'),
             child: CircularProgressIndicator(),
           ),
-          error: (e, _) => Center(
+          error: (e, _) => ErrorView(
             key: const ValueKey('error'),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.error_outline,
-                    size: 48, color: Theme.of(context).colorScheme.error),
-                const SizedBox(height: 12),
-                Text('Ошибка: $e'),
-                const SizedBox(height: 12),
-                FilledButton(
-                  onPressed: () => ref.invalidate(chatsProvider),
-                  child: const Text('Повторить'),
-                ),
-              ],
-            ),
+            error: e,
+            onRetry: () => ref.invalidate(chatsProvider),
           ),
           data: (chats) => chats.isEmpty
               ? const Center(
@@ -119,9 +107,9 @@ class _AnimatedItemState extends State<_AnimatedItem>
 
   @override
   Widget build(BuildContext context) => FadeTransition(
-        opacity: _opacity,
-        child: SlideTransition(position: _slide, child: widget.child),
-      );
+    opacity: _opacity,
+    child: SlideTransition(position: _slide, child: widget.child),
+  );
 }
 
 class _ChatTile extends StatelessWidget {
@@ -172,8 +160,8 @@ class _Avatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        width: 52,
-        height: 52,
-        child: ClipOval(child: AvatarImage(avatar: avatar)),
-      );
+    width: 52,
+    height: 52,
+    child: ClipOval(child: AvatarImage(avatar: avatar)),
+  );
 }

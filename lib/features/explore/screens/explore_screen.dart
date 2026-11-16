@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../catalog/models/catalog_item.dart';
 import '../../catalog/providers/catalog_provider.dart';
 import '../../../shared/widgets/avatar_image.dart';
+import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/pressable.dart';
 import '../../catalog/screens/item_detail_screen.dart';
 
@@ -20,7 +21,9 @@ class ExploreScreen extends ConsumerWidget {
       onRefresh: () async {
         // Новый seed → новая перетасовка карточек; секции пересоберутся сами
         ref.invalidate(catalogSeedProvider);
-        await ref.read(catalogSectionsProvider.future);
+        await ref
+            .read(catalogSectionsProvider.future)
+            .catchError((_) => <String, List<CatalogItem>>{});
       },
       child: CustomScrollView(
         slivers: [
@@ -50,11 +53,10 @@ class ExploreScreen extends ConsumerWidget {
               child: Center(child: CircularProgressIndicator()),
             ),
             error: (e, _) => SliverFillRemaining(
-              child: Center(
-                child: Text(
-                  'Ошибка: $e',
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
+              hasScrollBody: false,
+              child: ErrorView(
+                error: e,
+                onRetry: () => ref.invalidate(catalogSeedProvider),
               ),
             ),
             data: (sections) {

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../core/api/api_client.dart';
 import '../models/user.dart';
 import '../../pearls/models/billing.dart';
@@ -21,14 +22,16 @@ class ProfileStats {
   });
 
   factory ProfileStats.fromJson(Map<String, dynamic> json) => ProfileStats(
-        followers: json['followers'] as int? ?? 0,
-        following: json['following'] as int? ?? 0,
-        interactions: json['interactions'] as int? ?? 0,
-      );
+    followers: json['followers'] as int? ?? 0,
+    following: json['following'] as int? ?? 0,
+    interactions: json['interactions'] as int? ?? 0,
+  );
 }
 
 // Статистика берётся из публичного профиля автора; autoDispose — свежая при каждом заходе
-final profileStatsProvider = FutureProvider.autoDispose<ProfileStats>((ref) async {
+final profileStatsProvider = FutureProvider.autoDispose<ProfileStats>((
+  ref,
+) async {
   final user = await ref.watch(profileProvider.future);
   final dio = ref.read(apiClientProvider);
   final resp = await dio.get('/api/authors/${user.id}');
@@ -42,15 +45,14 @@ class PaymentInfo {
 
   const PaymentInfo({required this.pearls, this.waveUntil});
 
-  bool get hasWave =>
-      waveUntil != null && waveUntil!.isAfter(DateTime.now());
+  bool get hasWave => waveUntil != null && waveUntil!.isAfter(DateTime.now());
 
   factory PaymentInfo.fromJson(Map<String, dynamic> json) => PaymentInfo(
-        pearls: json['pearls'] as int? ?? 0,
-        waveUntil: json['wave_until'] != null
-            ? DateTime.parse(json['wave_until'] as String)
-            : null,
-      );
+    pearls: json['pearls'] as int? ?? 0,
+    waveUntil: json['wave_until'] != null
+        ? DateTime.parse(json['wave_until'] as String)
+        : null,
+  );
 }
 
 final billingConfigProvider = FutureProvider<BillingConfig>((ref) async {

@@ -6,8 +6,11 @@ class MiokoLogo extends StatelessWidget {
   final double size;
 
   @override
-  Widget build(BuildContext context) =>
-      SvgPicture.asset('assets/images/logo_mioko.svg', width: size, height: size);
+  Widget build(BuildContext context) => SvgPicture.asset(
+    'assets/images/logo_mioko.svg',
+    width: size,
+    height: size,
+  );
 }
 
 // Outline brand glyphs from Tabler Icons (MIT), tinted by the ambient IconTheme like Material icons
@@ -15,11 +18,11 @@ class BrandIcon extends StatelessWidget {
   const BrandIcon._(this._path, {this.size, this.color, this.filled = false});
 
   const BrandIcon.telegram({Key? key, double? size, Color? color})
-      : this._(_telegram, size: size, color: color);
+    : this._(_telegram, size: size, color: color);
   const BrandIcon.vk({Key? key, double? size, Color? color})
-      : this._(_vk, size: size, color: color, filled: true);
+    : this._(_vk, size: size, color: color, filled: true);
   const BrandIcon.github({Key? key, double? size, Color? color})
-      : this._(_github, size: size, color: color);
+    : this._(_github, size: size, color: color);
 
   final String _path;
   final double? size;
@@ -36,7 +39,8 @@ class BrandIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final iconTheme = IconTheme.of(context);
     final s = size ?? iconTheme.size ?? 24;
-    final c = color ?? iconTheme.color ?? Theme.of(context).colorScheme.onSurface;
+    final c =
+        color ?? iconTheme.color ?? Theme.of(context).colorScheme.onSurface;
     return SvgPicture.string(
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${filled ? '#000' : 'none'}" '
       'stroke="#000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'
@@ -53,8 +57,11 @@ class WaveLogo extends StatelessWidget {
   final double size;
 
   @override
-  Widget build(BuildContext context) =>
-      SvgPicture.asset('assets/images/mioko_wave.svg', width: size, height: size);
+  Widget build(BuildContext context) => SvgPicture.asset(
+    'assets/images/mioko_wave.svg',
+    width: size,
+    height: size,
+  );
 }
 
 class PearlShell extends StatelessWidget {
@@ -62,8 +69,11 @@ class PearlShell extends StatelessWidget {
   final double size;
 
   @override
-  Widget build(BuildContext context) =>
-      SvgPicture.asset('assets/images/pearls_shell.svg', width: size, height: size);
+  Widget build(BuildContext context) => SvgPicture.asset(
+    'assets/images/pearls_shell.svg',
+    width: size,
+    height: size,
+  );
 }
 
 class PearlIcon extends StatelessWidget {

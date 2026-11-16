@@ -1,9 +1,11 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../models/user.dart';
 import '../providers/profile_provider.dart';
 import '../../../shared/widgets/mioko_icons.dart';
+import '../../../shared/widgets/error_view.dart';
 import '../../../core/utils/format.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -28,9 +30,18 @@ class ProfileScreen extends ConsumerWidget {
                   height: 220,
                   child: Center(child: CircularProgressIndicator()),
                 ),
-                error: (e, _) => Center(
+                error: (e, _) => Padding(
                   key: const ValueKey('error'),
-                  child: Text('$e'),
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.paddingOf(context).top + 24,
+                  ),
+                  child: ErrorView(
+                    error: e,
+                    onRetry: () {
+                      ref.invalidate(profileProvider);
+                      ref.invalidate(paymentProvider);
+                    },
+                  ),
                 ),
                 data: (user) => _ProfileHeader(
                   key: const ValueKey('data'),
@@ -96,8 +107,10 @@ class _ProfileHeader extends StatelessWidget {
     final scheme = theme.colorScheme;
     final top = MediaQuery.of(context).padding.top;
     final initial = user.displayName.isNotEmpty ? user.displayName[0] : '?';
-    final initialText = Text(initial,
-        style: TextStyle(fontSize: 28, color: scheme.onSurface));
+    final initialText = Text(
+      initial,
+      style: TextStyle(fontSize: 28, color: scheme.onSurface),
+    );
 
     final outlinedStyle = OutlinedButton.styleFrom(
       side: BorderSide(color: scheme.outline),
@@ -113,12 +126,16 @@ class _ProfileHeader extends StatelessWidget {
             children: [
               Text(
                 'Профиль',
-                style: theme.textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const Spacer(),
               IconButton(
-                icon: Icon(Icons.settings_outlined, color: scheme.onSurfaceVariant),
+                icon: Icon(
+                  Icons.settings_outlined,
+                  color: scheme.onSurfaceVariant,
+                ),
                 onPressed: onSettings,
                 tooltip: 'Настройки',
               ),
@@ -153,13 +170,15 @@ class _ProfileHeader extends StatelessWidget {
                   children: [
                     Text(
                       user.displayName,
-                      style: theme.textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Text(
                       '@${user.username}',
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(color: scheme.onSurfaceVariant),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -176,7 +195,9 @@ class _ProfileHeader extends StatelessWidget {
                       if (payment.hasWave) ...[
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: scheme.tertiary.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(20),
@@ -195,7 +216,9 @@ class _ProfileHeader extends StatelessWidget {
                       ],
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: scheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(16),
@@ -207,9 +230,10 @@ class _ProfileHeader extends StatelessWidget {
                             Text(
                               '${payment.pearls}',
                               style: TextStyle(
-                                  color: scheme.onSurface,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13),
+                                color: scheme.onSurface,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
                             ),
                           ],
                         ),
@@ -284,10 +308,14 @@ class _StatItem extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Column(
       children: [
-        Text(value,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        Text(label,
-            style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 11)),
+        Text(
+          value,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        Text(
+          label,
+          style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 11),
+        ),
       ],
     );
   }
@@ -299,9 +327,11 @@ class _EmptyTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Text(text,
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-      );
+    child: Text(
+      text,
+      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+    ),
+  );
 }
 
 class _TabBarDelegate extends SliverPersistentHeaderDelegate {
@@ -314,10 +344,8 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => tabBar.preferredSize.height;
 
   @override
-  Widget build(context, shrinkOffset, overlapsContent) => Container(
-        color: Theme.of(context).colorScheme.surface,
-        child: tabBar,
-      );
+  Widget build(context, shrinkOffset, overlapsContent) =>
+      Container(color: Theme.of(context).colorScheme.surface, child: tabBar);
 
   // TabBar пересоздаётся со свежими цветами при смене темы
   @override

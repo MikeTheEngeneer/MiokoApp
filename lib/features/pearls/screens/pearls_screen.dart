@@ -3,7 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/api/api_error.dart';
+import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/mioko_icons.dart';
 import '../../profile/providers/profile_provider.dart';
 import '../models/billing.dart';
@@ -32,7 +32,9 @@ class _PearlsScreenState extends ConsumerState<PearlsScreen> {
     final user = ref.read(profileProvider).valueOrNull;
     final messenger = ScaffoldMessenger.of(context);
     if (config?.publicId == null || user == null) {
-      messenger.showSnackBar(const SnackBar(content: Text('Оплата сейчас недоступна, обнови экран')));
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Оплата сейчас недоступна, обнови экран')),
+      );
       return;
     }
     final isWave = _tab == BillingTab.plans;
@@ -51,16 +53,24 @@ class _PearlsScreenState extends ConsumerState<PearlsScreen> {
 
     switch (result) {
       case PaymentSuccess():
-        messenger.showSnackBar(SnackBar(
-          content: Text(isWave
-              ? 'Оплата прошла — Mioko Wave скоро активируется'
-              : 'Оплата прошла — жемчужины скоро придут'),
-        ));
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              isWave
+                  ? 'Оплата прошла — Mioko Wave скоро активируется'
+                  : 'Оплата прошла — жемчужины скоро придут',
+            ),
+          ),
+        );
         await _waitForCredit(before);
       case PaymentFailed(:final message):
-        messenger.showSnackBar(SnackBar(
-          content: Text('Оплата не прошла${message != null ? ': $message' : ''}'),
-        ));
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'Оплата не прошла${message != null ? ': $message' : ''}',
+            ),
+          ),
+        );
       case null:
         break; // закрыл окно оплаты
     }
@@ -73,7 +83,9 @@ class _PearlsScreenState extends ConsumerState<PearlsScreen> {
       await Future<void>.delayed(const Duration(seconds: 2));
       if (!mounted) return;
       ref.invalidate(paymentProvider);
-      final now = await ref.read(paymentProvider.future).catchError((_) => before!);
+      final now = await ref
+          .read(paymentProvider.future)
+          .catchError((_) => before!);
       if (before == null ||
           now.pearls != before.pearls ||
           now.waveUntil != before.waveUntil) {
@@ -96,9 +108,12 @@ class _PearlsScreenState extends ConsumerState<PearlsScreen> {
 
     final options = config.valueOrNull == null
         ? const <BillingOption>[]
-        : (_tab == BillingTab.plans ? config.value!.plans : config.value!.packs);
+        : (_tab == BillingTab.plans
+              ? config.value!.plans
+              : config.value!.packs);
     final selectedId = _tab == BillingTab.plans ? _planId : _packId;
-    final selected = options.where((o) => o.id == selectedId).firstOrNull ??
+    final selected =
+        options.where((o) => o.id == selectedId).firstOrNull ??
         options.firstOrNull;
 
     return Scaffold(
@@ -120,9 +135,7 @@ class _PearlsScreenState extends ConsumerState<PearlsScreen> {
                     const SizedBox(width: 4),
                     Text(
                       'Тарифы и жемчужины',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleLarge
+                      style: Theme.of(context).textTheme.titleLarge
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ],
@@ -156,8 +169,9 @@ class _PearlsScreenState extends ConsumerState<PearlsScreen> {
                       padding: EdgeInsets.all(32),
                       child: Center(child: CircularProgressIndicator()),
                     ),
-                    error: (e, _) => _LoadError(
-                      text: apiErrorMessage(e, 'Не удалось загрузить тарифы'),
+                    error: (e, _) => ErrorView(
+                      error: e,
+                      compact: true,
                       onRetry: () => ref.invalidate(billingConfigProvider),
                     ),
                     data: (_) => Column(
@@ -170,9 +184,11 @@ class _PearlsScreenState extends ConsumerState<PearlsScreen> {
                             popular: _tab == BillingTab.plans && o.id == '7d',
                             onTap: () {
                               HapticFeedback.selectionClick();
-                              setState(() => _tab == BillingTab.plans
-                                  ? _planId = o.id
-                                  : _packId = o.id);
+                              setState(
+                                () => _tab == BillingTab.plans
+                                    ? _planId = o.id
+                                    : _packId = o.id,
+                              );
                             },
                           ),
                       ],
@@ -229,17 +245,25 @@ class _StatusCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       hasWave ? 'Mioko Wave' : 'Mioko Tide',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: scheme.primary),
                       ),
                       child: Text(
-                        hasWave ? 'до ${_date(payment!.waveUntil!)}' : 'Бесплатный',
+                        hasWave
+                            ? 'до ${_date(payment!.waveUntil!)}'
+                            : 'Бесплатный',
                         style: TextStyle(color: scheme.primary, fontSize: 11),
                       ),
                     ),
@@ -264,7 +288,10 @@ class _StatusCard extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             payment == null ? '—' : '${payment!.pearls}',
-                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ],
                       ),
@@ -307,7 +334,9 @@ class _TabSwitch extends StatelessWidget {
               label,
               style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: active ? scheme.onPrimaryContainer : scheme.onSurfaceVariant,
+                color: active
+                    ? scheme.onPrimaryContainer
+                    : scheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -338,7 +367,10 @@ class _TabIntro extends StatelessWidget {
 
   static const _waveFeatures = [
     (Icons.all_inclusive, 'Общайся без лимита сообщений'),
-    (Icons.auto_fix_high_outlined, 'Создавай персонажей и истории без ограничений'),
+    (
+      Icons.auto_fix_high_outlined,
+      'Создавай персонажей и истории без ограничений',
+    ),
     (Icons.psychology_outlined, 'Память хранит важное даже спустя месяцы'),
     (Icons.theater_comedy_outlined, 'Делай Roleplay живее и атмосфернее'),
   ];
@@ -369,13 +401,16 @@ class _TabIntro extends StatelessWidget {
                 children: [
                   Text(
                     isPlans ? 'Открой Mioko Wave' : 'Пакеты жемчужин',
-                    style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   Text(
-                    isPlans
-                        ? 'Поймай свою волну'
-                        : 'Жемчужины открывают генерации, озвучку и другие премиум-функции',
-                    style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
+                    isPlans ? 'Поймай свою волну' : 'Жемчужины открывают генерации, озвучку и другие премиум-функции',
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
+                      fontSize: 13,
+                    ),
                   ),
                 ],
               ),
@@ -390,7 +425,9 @@ class _TabIntro extends StatelessWidget {
               children: [
                 Icon(icon, size: 20, color: scheme.primary),
                 const SizedBox(width: 12),
-                Expanded(child: Text(text, style: const TextStyle(fontSize: 14))),
+                Expanded(
+                  child: Text(text, style: const TextStyle(fontSize: 14)),
+                ),
               ],
             ),
           ),
@@ -461,19 +498,30 @@ class _OptionTile extends StatelessWidget {
                         child: Text(
                           isPack ? option.label : option.shortLabel,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                       if (popular) ...[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: scheme.primary),
                           ),
-                          child: Text('Популярно',
-                              style: TextStyle(color: scheme.primary, fontSize: 11)),
+                          child: Text(
+                            'Популярно',
+                            style: TextStyle(
+                              color: scheme.primary,
+                              fontSize: 11,
+                            ),
+                          ),
                         ),
                       ],
                     ],
@@ -483,7 +531,10 @@ class _OptionTile extends StatelessWidget {
                 Text(
                   formatRub(option.amount),
                   textAlign: TextAlign.right,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ],
             ),
@@ -495,7 +546,11 @@ class _OptionTile extends StatelessWidget {
 }
 
 class _BuyBar extends StatelessWidget {
-  const _BuyBar({required this.text, required this.busy, required this.onPressed});
+  const _BuyBar({
+    required this.text,
+    required this.busy,
+    required this.onPressed,
+  });
   final String text;
   final bool busy;
   final VoidCallback onPressed;
@@ -521,8 +576,13 @@ class _BuyBar extends StatelessWidget {
                 child: FilledButton(
                   onPressed: busy ? null : onPressed,
                   style: FilledButton.styleFrom(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 180),
@@ -549,24 +609,4 @@ class _BuyBar extends StatelessWidget {
       ),
     );
   }
-}
-
-class _LoadError extends StatelessWidget {
-  const _LoadError({required this.text, required this.onRetry});
-  final String text;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Text(text,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Theme.of(context).colorScheme.error)),
-            const SizedBox(height: 8),
-            TextButton(onPressed: onRetry, child: const Text('Повторить')),
-          ],
-        ),
-      );
 }

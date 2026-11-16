@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+
 import '../models/media_avatar.dart';
 
 // Заполняет родителя целиком; форму (круг, скругление) задаёт обёртка

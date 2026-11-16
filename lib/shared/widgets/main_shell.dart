@@ -10,10 +10,30 @@ class MainShell extends StatelessWidget {
   final Widget child;
 
   static const _items = [
-    _NavItem(icon: Icons.home_outlined,       activeIcon: Icons.home_rounded,        label: 'Главная', path: '/home'),
-    _NavItem(icon: Icons.explore_outlined,    activeIcon: Icons.explore,             label: 'Каталог', path: '/explore'),
-    _NavItem(icon: Icons.chat_bubble_outline, activeIcon: Icons.chat_bubble_rounded, label: 'Чаты',    path: '/chats'),
-    _NavItem(icon: Icons.person_outline,      activeIcon: Icons.person_rounded,      label: 'Профиль', path: '/profile'),
+    _NavItem(
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home_rounded,
+      label: 'Главная',
+      path: '/home',
+    ),
+    _NavItem(
+      icon: Icons.explore_outlined,
+      activeIcon: Icons.explore,
+      label: 'Каталог',
+      path: '/explore',
+    ),
+    _NavItem(
+      icon: Icons.chat_bubble_outline,
+      activeIcon: Icons.chat_bubble_rounded,
+      label: 'Чаты',
+      path: '/chats',
+    ),
+    _NavItem(
+      icon: Icons.person_outline,
+      activeIcon: Icons.person_rounded,
+      label: 'Профиль',
+      path: '/profile',
+    ),
   ];
 
   int _currentIndex(String location) {
@@ -86,7 +106,9 @@ class _FloatingNavBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: scheme.surfaceContainerHigh.withValues(alpha: 0.85),
                 borderRadius: BorderRadius.circular(32),
-                border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
+                border: Border.all(
+                  color: scheme.outlineVariant.withValues(alpha: 0.6),
+                ),
               ),
               // Не Expanded: при равных долях капсула с подписью не помещалась в 1/4 ширины
               child: Row(
@@ -112,7 +134,11 @@ class _FloatingNavBar extends StatelessWidget {
 }
 
 class _NavButton extends StatelessWidget {
-  const _NavButton({required this.item, required this.active, required this.onTap});
+  const _NavButton({
+    required this.item,
+    required this.active,
+    required this.onTap,
+  });
 
   final _NavItem item;
   final bool active;
@@ -137,7 +163,10 @@ class _NavButton extends StatelessWidget {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeOutCubic,
-            padding: EdgeInsets.symmetric(horizontal: active ? 14 : 10, vertical: 9),
+            padding: EdgeInsets.symmetric(
+              horizontal: active ? 14 : 10,
+              vertical: 9,
+            ),
             decoration: BoxDecoration(
               color: active ? scheme.primaryContainer : Colors.transparent,
               borderRadius: BorderRadius.circular(22),
@@ -145,7 +174,11 @@ class _NavButton extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(active ? item.activeIcon : item.icon, color: color, size: 24),
+                Icon(
+                  active ? item.activeIcon : item.icon,
+                  color: color,
+                  size: 24,
+                ),
                 AnimatedSize(
                   duration: const Duration(milliseconds: 250),
                   curve: Curves.easeOutCubic,

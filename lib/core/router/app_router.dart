@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/home/screens/home_screen.dart';
@@ -18,19 +19,19 @@ import '../../shared/widgets/main_shell.dart';
 
 // Fade + лёгкий slide снизу — используется для всех push-переходов
 Page<void> _buildPage(Widget child) => CustomTransitionPage(
-      child: child,
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        final fade = CurvedAnimation(parent: animation, curve: Curves.easeOut);
-        final slide = Tween<Offset>(
-          begin: const Offset(0, 0.06),
-          end: Offset.zero,
-        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut));
-        return FadeTransition(
-          opacity: fade,
-          child: SlideTransition(position: slide, child: child),
-        );
-      },
+  child: child,
+  transitionsBuilder: (context, animation, secondaryAnimation, child) {
+    final fade = CurvedAnimation(parent: animation, curve: Curves.easeOut);
+    final slide = Tween<Offset>(
+      begin: const Offset(0, 0.06),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut));
+    return FadeTransition(
+      opacity: fade,
+      child: SlideTransition(position: slide, child: child),
     );
+  },
+);
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
@@ -56,9 +57,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/item/:id',
         pageBuilder: (_, state) {
           final args = state.extra;
-          return _buildPage(args is ItemDetailArgs
-              ? ItemDetailScreen(args: args)
-              : const Scaffold(body: Center(child: Text('Персонаж не найден'))));
+          return _buildPage(
+            args is ItemDetailArgs
+                ? ItemDetailScreen(args: args)
+                : const Scaffold(
+                    body: Center(child: Text('Персонаж не найден')),
+                  ),
+          );
         },
       ),
 
@@ -69,11 +74,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/pearls',
         // /pearls?tab=packs — сразу на вкладке жемчужин
-        pageBuilder: (_, state) => _buildPage(PearlsScreen(
-          initialTab: state.uri.queryParameters['tab'] == 'packs'
-              ? BillingTab.packs
-              : BillingTab.plans,
-        )),
+        pageBuilder: (_, state) => _buildPage(
+          PearlsScreen(
+            initialTab: state.uri.queryParameters['tab'] == 'packs'
+                ? BillingTab.packs
+                : BillingTab.plans,
+          ),
+        ),
       ),
       GoRoute(
         path: '/settings',

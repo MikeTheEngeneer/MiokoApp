@@ -17,12 +17,12 @@ class MediaAvatar {
   });
 
   factory MediaAvatar.fromJson(Map<String, dynamic>? json) => MediaAvatar(
-        imageUrl: json?['image_url'] as String?,
-        initial: json?['initial'] as String? ?? '?',
-        c1: _hex(json?['c1'] as String?, const Color(0xFF3A6B8C)),
-        c2: _hex(json?['c2'] as String?, const Color(0xFF16263A)),
-        alignment: _alignment(json?['pos'] as String?),
-      );
+    imageUrl: json?['image_url'] as String?,
+    initial: json?['initial'] as String? ?? '?',
+    c1: _hex(json?['c1'] as String?, const Color(0xFF3A6B8C)),
+    c2: _hex(json?['c2'] as String?, const Color(0xFF16263A)),
+    alignment: _alignment(json?['pos'] as String?),
+  );
 
   static Color _hex(String? hex, Color fallback) {
     final h = hex?.replaceFirst('#', '');

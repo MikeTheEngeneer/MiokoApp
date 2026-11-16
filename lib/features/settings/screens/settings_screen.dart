@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../core/theme/theme_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../shared/widgets/mioko_icons.dart';
@@ -30,9 +31,8 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(width: 4),
                   Text(
                     'Настройки',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                    style: Theme.of(context).textTheme.titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -48,26 +48,20 @@ class SettingsScreen extends ConsumerWidget {
                 label: 'Персоны',
                 onTap: () => context.push('/personas'),
               ),
-              _Tile(
-                icon: Icons.book_outlined,
-                label: 'Лорбуки',
-                onTap: () {},
-              ),
-              _Tile(
-                icon: Icons.link,
-                label: 'Способы входа',
-                onTap: () {},
-              ),
+              _Tile(icon: Icons.book_outlined, label: 'Лорбуки', onTap: () {}),
+              _Tile(icon: Icons.link, label: 'Способы входа', onTap: () {}),
 
               // ── Настройки приложения ──────────────────
               _SectionHeader(label: 'Настройки приложения'),
               _ThemeTile(
                 dark: themeSettings.dark,
-                onChanged: (v) => ref.read(themeSettingsProvider.notifier).setDark(v),
+                onChanged: (v) =>
+                    ref.read(themeSettingsProvider.notifier).setDark(v),
               ),
               _MonetTile(
                 enabled: themeSettings.monet,
-                onChanged: (v) => ref.read(themeSettingsProvider.notifier).setMonet(v),
+                onChanged: (v) =>
+                    ref.read(themeSettingsProvider.notifier).setMonet(v),
               ),
               _Tile(
                 icon: Icons.notifications_outlined,
@@ -226,9 +220,9 @@ class _AboutDialog extends StatelessWidget {
             child: Column(
               children: [
                 ShaderMask(
-                  shaderCallback: (rect) => const LinearGradient(
-                    colors: [_brandCyan, _brandBlue],
-                  ).createShader(rect),
+                  shaderCallback: (rect) =>
+                      const LinearGradient(colors: [_brandCyan, _brandBlue])
+                          .createShader(rect),
                   child: const Text(
                     'MiokoApp',
                     style: TextStyle(
@@ -241,7 +235,10 @@ class _AboutDialog extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: scheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(20),
@@ -311,7 +308,8 @@ class _AboutDialog extends StatelessWidget {
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                     child: const Text('Закрыть'),
                   ),
@@ -357,15 +355,22 @@ class _CreditTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(role,
-                        style: TextStyle(
-                            color: scheme.onSurfaceVariant, fontSize: 11)),
+                    Text(
+                      role,
+                      style: TextStyle(
+                        color: scheme.onSurfaceVariant,
+                        fontSize: 11,
+                      ),
+                    ),
                     const SizedBox(height: 2),
-                    Text(name,
-                        style: TextStyle(
-                            color: scheme.primary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600)),
+                    Text(
+                      name,
+                      style: TextStyle(
+                        color: scheme.primary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -441,12 +446,13 @@ class _ThemeTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          Icon(Icons.palette_outlined,
-              size: 22, color: Theme.of(context).colorScheme.onSurfaceVariant),
-          const SizedBox(width: 16),
-          const Expanded(
-            child: Text('Тема', style: TextStyle(fontSize: 15)),
+          Icon(
+            Icons.palette_outlined,
+            size: 22,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
+          const SizedBox(width: 16),
+          const Expanded(child: Text('Тема', style: TextStyle(fontSize: 15))),
           SegmentedButton<bool>(
             style: SegmentedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 12),

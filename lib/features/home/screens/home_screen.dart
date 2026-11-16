@@ -6,7 +6,7 @@ import '../../catalog/providers/catalog_provider.dart';
 import '../../../shared/widgets/avatar_image.dart';
 import '../../../shared/widgets/pressable.dart';
 import '../../../core/utils/format.dart';
-import '../../../core/api/api_error.dart';
+import '../../../shared/widgets/error_view.dart';
 import '../../catalog/screens/item_detail_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -15,51 +15,79 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authorsAsync = ref.watch(catalogAuthorsProvider);
+    final hot = ref.watch(catalogFeedProvider(CatalogSort.hot));
+    final fresh = ref.watch(catalogFeedProvider(CatalogSort.new_));
     final top = MediaQuery.of(context).padding.top;
+
+    void retry() {
+      ref.invalidate(catalogFeedProvider);
+      ref.invalidate(catalogAuthorsProvider);
+    }
+
+    // Обе ленты упали — показываем одну ошибку на весь экран, а не две одинаковые
+    final failed =
+        hot.hasError && !hot.hasValue && fresh.hasError && !fresh.hasValue;
 
     return RefreshIndicator(
       onRefresh: () async {
-        ref.invalidate(catalogFeedProvider);
-        ref.invalidate(catalogAuthorsProvider);
-        await ref.read(catalogFeedProvider(CatalogSort.hot).future);
+        retry();
+        // Ошибку покажет котик на экране — здесь её только гасим
+        await ref
+            .read(catalogFeedProvider(CatalogSort.hot).future)
+            .catchError((_) => <CatalogItem>[]);
       },
       child: CustomScrollView(
         slivers: [
-          SliverPadding(
-            padding: EdgeInsets.only(
-              top: top + 16,
-              left: 16,
-              right: 16,
-              bottom: 8,
-            ),
-            sliver: SliverToBoxAdapter(
-              child: Text(
-                'Главная',
-                style: Theme.of(context).textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
+          if (failed) ...[
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  top: top,
+                  bottom: MediaQuery.paddingOf(context).bottom,
+                ),
+                child: ErrorView(error: hot.error, onRetry: retry),
               ),
             ),
-          ),
-
-          SliverToBoxAdapter(
-            child: authorsAsync.when(
-              loading: () => const SizedBox.shrink(),
-              error: (_, _) => const SizedBox.shrink(),
-              data: (authors) => _AuthorsRow(authors: authors),
+          ] else ...[
+            SliverPadding(
+              padding: EdgeInsets.only(
+                top: top + 16,
+                left: 16,
+                right: 16,
+                bottom: 8,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: Text(
+                  'Главная',
+                  style: Theme.of(context).textTheme.headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
             ),
-          ),
 
-          const SliverToBoxAdapter(
-            child: _FeedRow(sort: CatalogSort.hot, title: 'Популярное'),
-          ),
-          const SliverToBoxAdapter(
-            child: _FeedRow(sort: CatalogSort.new_, title: 'Новинки'),
-          ),
+            SliverToBoxAdapter(
+              child: authorsAsync.when(
+                loading: () => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
+                data: (authors) => _AuthorsRow(authors: authors),
+              ),
+            ),
 
-          // Место под плавающую панель снизу
-          SliverToBoxAdapter(
-            child: SizedBox(height: 24 + MediaQuery.paddingOf(context).bottom),
-          ),
+            const SliverToBoxAdapter(
+              child: _FeedRow(sort: CatalogSort.hot, title: 'Популярное'),
+            ),
+            const SliverToBoxAdapter(
+              child: _FeedRow(sort: CatalogSort.new_, title: 'Новинки'),
+            ),
+
+            // Место под плавающую панель снизу
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 24 + MediaQuery.paddingOf(context).bottom,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -92,12 +120,11 @@ class _FeedRow extends ConsumerWidget {
               ),
             ],
           ),
-          error: (e, _) => Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              '$title: ${apiErrorMessage(e, 'не удалось загрузить')}',
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
+          // Одна лента упала, другая жива — маленький котик только на месте упавшей
+          error: (e, _) => ErrorView(
+            error: e,
+            compact: true,
+            onRetry: () => ref.invalidate(catalogFeedProvider(sort)),
           ),
           data: (items) => items.isEmpty
               ? const SizedBox.shrink()

@@ -14,12 +14,12 @@ class Persona {
   });
 
   factory Persona.fromJson(Map<String, dynamic> json) => Persona(
-        publicId: json['public_id'] as String,
-        name: json['name'] as String? ?? '',
-        description: json['description'] as String? ?? '',
-        avatarUrl: json['avatar_url'] as String?,
-        isDefault: json['is_default'] as bool? ?? false,
-      );
+    publicId: json['public_id'] as String,
+    name: json['name'] as String? ?? '',
+    description: json['description'] as String? ?? '',
+    avatarUrl: json['avatar_url'] as String?,
+    isDefault: json['is_default'] as bool? ?? false,
+  );
 }
 
 class PersonasData {

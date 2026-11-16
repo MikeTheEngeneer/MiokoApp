@@ -14,7 +14,8 @@ class BillingOption {
   // "Mioko Wave · 1 месяц" → "1 месяц"
   String get shortLabel => label.split('·').last.trim();
 
-  factory BillingOption.fromJson(String id, Map<String, dynamic> json) => BillingOption(
+  factory BillingOption.fromJson(String id, Map<String, dynamic> json) =>
+      BillingOption(
         id: id,
         label: json['label'] as String? ?? id,
         amount: json['amount'] as int? ?? 0,
@@ -28,14 +29,21 @@ class BillingConfig {
   final List<BillingOption> plans;
   final List<BillingOption> packs;
 
-  const BillingConfig({this.publicId, required this.plans, required this.packs});
+  const BillingConfig({
+    this.publicId,
+    required this.plans,
+    required this.packs,
+  });
 
   factory BillingConfig.fromJson(Map<String, dynamic> json) {
     List<BillingOption> parse(Object? m) => [
-          if (m is Map)
-            for (final e in m.entries)
-              BillingOption.fromJson(e.key as String, Map<String, dynamic>.from(e.value as Map)),
-        ];
+      if (m is Map)
+        for (final e in m.entries)
+          BillingOption.fromJson(
+            e.key as String,
+            Map<String, dynamic>.from(e.value as Map),
+          ),
+    ];
     return BillingConfig(
       publicId: json['publicId'] as String?,
       plans: parse(json['plans']),

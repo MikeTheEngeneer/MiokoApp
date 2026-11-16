@@ -1,8 +1,10 @@
 import 'dart:io';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_error.dart';
 import '../../../core/api/image_upload.dart';
@@ -12,7 +14,8 @@ class CreatePersonaScreen extends ConsumerStatefulWidget {
   const CreatePersonaScreen({super.key});
 
   @override
-  ConsumerState<CreatePersonaScreen> createState() => _CreatePersonaScreenState();
+  ConsumerState<CreatePersonaScreen> createState() =>
+      _CreatePersonaScreenState();
 }
 
 class _CreatePersonaScreenState extends ConsumerState<CreatePersonaScreen> {
@@ -89,12 +92,15 @@ class _CreatePersonaScreenState extends ConsumerState<CreatePersonaScreen> {
       final dio = ref.read(apiClientProvider);
       final avatarUrl = _image != null ? await uploadImage(dio, _image!) : null;
 
-      await dio.post('/api/personas', data: {
-        'name': _nameCtrl.text.trim(),
-        'description': _descCtrl.text.trim(),
-        'avatar_url': avatarUrl,
-        'is_default': _isDefault,
-      });
+      await dio.post(
+        '/api/personas',
+        data: {
+          'name': _nameCtrl.text.trim(),
+          'description': _descCtrl.text.trim(),
+          'avatar_url': avatarUrl,
+          'is_default': _isDefault,
+        },
+      );
 
       ref.invalidate(personasProvider);
       if (!mounted) return;
@@ -129,7 +135,9 @@ class _CreatePersonaScreenState extends ConsumerState<CreatePersonaScreen> {
                     CircleAvatar(
                       radius: 48,
                       backgroundColor: scheme.surfaceContainerHighest,
-                      backgroundImage: _image != null ? FileImage(_image!) : null,
+                      backgroundImage: _image != null
+                          ? FileImage(_image!)
+                          : null,
                       child: _image == null
                           ? Text(initial, style: const TextStyle(fontSize: 32))
                           : null,
@@ -141,7 +149,11 @@ class _CreatePersonaScreenState extends ConsumerState<CreatePersonaScreen> {
                         shape: BoxShape.circle,
                         border: Border.all(color: scheme.surface, width: 2),
                       ),
-                      child: Icon(Icons.camera_alt, size: 14, color: scheme.onPrimary),
+                      child: Icon(
+                        Icons.camera_alt,
+                        size: 14,
+                        color: scheme.onPrimary,
+                      ),
                     ),
                   ],
                 ),
@@ -156,19 +168,23 @@ class _CreatePersonaScreenState extends ConsumerState<CreatePersonaScreen> {
                   color: scheme.errorContainer,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text(_error!,
-                    style: TextStyle(color: scheme.onErrorContainer, fontSize: 13)),
+                child: Text(
+                  _error!,
+                  style: TextStyle(
+                    color: scheme.onErrorContainer,
+                    fontSize: 13,
+                  ),
+                ),
               ),
               const SizedBox(height: 14),
             ],
 
             TextFormField(
               controller: _nameCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Имя',
-              ),
+              decoration: const InputDecoration(labelText: 'Имя'),
               onChanged: (_) => setState(() {}),
-              validator: (v) => (v?.trim().isEmpty ?? true) ? 'Введите имя' : null,
+              validator: (v) =>
+                  (v?.trim().isEmpty ?? true) ? 'Введите имя' : null,
             ),
             const SizedBox(height: 14),
             TextFormField(
@@ -194,7 +210,9 @@ class _CreatePersonaScreenState extends ConsumerState<CreatePersonaScreen> {
               onPressed: _saving ? null : _save,
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               child: _saving
                   ? const SizedBox(
@@ -202,7 +220,10 @@ class _CreatePersonaScreenState extends ConsumerState<CreatePersonaScreen> {
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Создать', style: TextStyle(fontWeight: FontWeight.w600)),
+                  : const Text(
+                      'Создать',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
             ),
           ],
         ),

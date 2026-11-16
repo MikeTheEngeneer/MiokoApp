@@ -43,8 +43,8 @@ class ThemeSettingsNotifier extends StateNotifier<ThemeSettings> {
 
 final themeSettingsProvider =
     StateNotifierProvider<ThemeSettingsNotifier, ThemeSettings>(
-  (ref) => ThemeSettingsNotifier(),
-);
+      (ref) => ThemeSettingsNotifier(),
+    );
 
 // Monet есть только на Android 12+, на остальных устройствах палитры нет
 final monetSupportedProvider = FutureProvider<bool>(

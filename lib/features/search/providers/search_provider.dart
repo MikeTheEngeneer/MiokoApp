@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_client.dart';
-import '../../../core/api/api_error.dart';
 import '../../catalog/models/catalog_item.dart';
 import '../../catalog/providers/catalog_provider.dart';
 
@@ -12,7 +11,8 @@ class SearchState {
   final int? total;
   final String? cursor;
   final bool loading;
-  final String? error;
+  // Сама ошибка, а не текст: экран сам решит, «нет интернета» это или другое
+  final Object? error;
 
   const SearchState({
     this.query = '',
@@ -30,7 +30,7 @@ class SearchState {
     String? cursor,
     bool clearCursor = false,
     bool? loading,
-    String? error,
+    Object? error,
   }) => SearchState(
     query: query,
     items: items ?? this.items,
@@ -84,10 +84,7 @@ class SearchNotifier extends StateNotifier<SearchState> {
       );
     } catch (e) {
       if (gen != _generation) return;
-      state = SearchState(
-        query: q,
-        error: apiErrorMessage(e, 'Не удалось выполнить поиск'),
-      );
+      state = SearchState(query: q, error: e);
     }
   }
 
@@ -113,7 +110,7 @@ class SearchNotifier extends StateNotifier<SearchState> {
       );
     } catch (e) {
       if (gen != _generation) return;
-      state = s.copyWith(error: apiErrorMessage(e, 'Не удалось загрузить ещё'));
+      state = s.copyWith(error: e);
     }
   }
 

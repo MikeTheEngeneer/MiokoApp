@@ -1,7 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../core/api/api_client.dart';
+import '../../../shared/widgets/error_view.dart';
 import '../models/persona.dart';
 import '../providers/personas_provider.dart';
 
@@ -18,10 +20,16 @@ class _PersonasScreenState extends ConsumerState<PersonasScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final personasAsync = ref.watch(personasProvider).whenData((d) => PersonasData(
-          personas: d.personas.where((p) => !_removed.contains(p.publicId)).toList(),
-          limit: d.limit,
-        ));
+    final personasAsync = ref
+        .watch(personasProvider)
+        .whenData(
+          (d) => PersonasData(
+            personas: d.personas
+                .where((p) => !_removed.contains(p.publicId))
+                .toList(),
+            limit: d.limit,
+          ),
+        );
     final scheme = Theme.of(context).colorScheme;
     final data = personasAsync.valueOrNull;
 
@@ -35,7 +43,10 @@ class _PersonasScreenState extends ConsumerState<PersonasScreen> {
               child: Center(
                 child: Text(
                   '${data.personas.length} / ${data.limit}',
-                  style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 13,
+                  ),
                 ),
               ),
             ),
@@ -55,29 +66,17 @@ class _PersonasScreenState extends ConsumerState<PersonasScreen> {
             key: ValueKey('loading'),
             child: CircularProgressIndicator(),
           ),
-          error: (e, _) => Center(
+          error: (e, _) => ErrorView(
             key: const ValueKey('error'),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Ошибка: $e'),
-                const SizedBox(height: 12),
-                FilledButton(
-                  onPressed: () => ref.invalidate(personasProvider),
-                  child: const Text('Повторить'),
-                ),
-              ],
-            ),
+            error: e,
+            onRetry: () => ref.invalidate(personasProvider),
           ),
           data: (data) => RefreshIndicator(
             key: const ValueKey('data'),
             onRefresh: () => ref.refresh(personasProvider.future),
             child: data.personas.isEmpty
                 ? ListView(
-                    children: const [
-                      SizedBox(height: 120),
-                      _EmptyState(),
-                    ],
+                    children: const [SizedBox(height: 120), _EmptyState()],
                   )
                 : ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
@@ -88,7 +87,8 @@ class _PersonasScreenState extends ConsumerState<PersonasScreen> {
                       return Dismissible(
                         key: ValueKey(persona.publicId),
                         direction: DismissDirection.endToStart,
-                        confirmDismiss: (_) => _confirmDelete(context, ref, persona),
+                        confirmDismiss: (_) =>
+                            _confirmDelete(context, ref, persona),
                         onDismissed: (_) {
                           setState(() => _removed.add(persona.publicId));
                           ref.invalidate(personasProvider);
@@ -100,8 +100,10 @@ class _PersonasScreenState extends ConsumerState<PersonasScreen> {
                             color: scheme.errorContainer,
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          child: Icon(Icons.delete_outline,
-                              color: scheme.onErrorContainer),
+                          child: Icon(
+                            Icons.delete_outline,
+                            color: scheme.onErrorContainer,
+                          ),
                         ),
                         child: _PersonaCard(persona: persona),
                       );
@@ -115,12 +117,17 @@ class _PersonasScreenState extends ConsumerState<PersonasScreen> {
 }
 
 Future<bool> _confirmDelete(
-    BuildContext context, WidgetRef ref, Persona persona) async {
+  BuildContext context,
+  WidgetRef ref,
+  Persona persona,
+) async {
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
       title: const Text('Удалить персону?'),
-      content: Text('«${persona.name}» будет удалена без возможности восстановления.'),
+      content: Text(
+        '«${persona.name}» будет удалена без возможности восстановления.',
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx, false),
@@ -140,7 +147,9 @@ Future<bool> _confirmDelete(
   if (confirmed != true) return false;
 
   try {
-    await ref.read(apiClientProvider).delete('/api/personas/${persona.publicId}');
+    await ref
+        .read(apiClientProvider)
+        .delete('/api/personas/${persona.publicId}');
     return true;
   } catch (_) {
     if (context.mounted) {
@@ -204,8 +213,9 @@ class _PersonaCard extends StatelessWidget {
           CircleAvatar(
             radius: 26,
             backgroundColor: scheme.surfaceContainerHighest,
-            backgroundImage:
-                persona.avatarUrl != null ? NetworkImage(persona.avatarUrl!) : null,
+            backgroundImage: persona.avatarUrl != null
+                ? NetworkImage(persona.avatarUrl!)
+                : null,
             child: persona.avatarUrl == null
                 ? Text(initial, style: const TextStyle(fontSize: 20))
                 : null,
@@ -221,7 +231,9 @@ class _PersonaCard extends StatelessWidget {
                       child: Text(
                         persona.name,
                         style: const TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 15),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -229,7 +241,9 @@ class _PersonaCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: scheme.primary.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(10),
@@ -249,7 +263,9 @@ class _PersonaCard extends StatelessWidget {
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                        color: scheme.onSurfaceVariant, fontSize: 13),
+                      color: scheme.onSurfaceVariant,
+                      fontSize: 13,
+                    ),
                   ),
                 ],
               ],

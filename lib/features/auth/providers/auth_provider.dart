@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
 import '../../../core/api/api_client.dart';
+import '../../../core/api/api_error.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../profile/providers/profile_provider.dart';
 import '../../chat/providers/chats_provider.dart';
@@ -34,15 +36,14 @@ class AuthState {
     String? avatarUrl,
     String? error,
     bool? isLoading,
-  }) =>
-      AuthState(
-        status: status ?? this.status,
-        userId: userId ?? this.userId,
-        displayName: displayName ?? this.displayName,
-        avatarUrl: avatarUrl ?? this.avatarUrl,
-        error: error,
-        isLoading: isLoading ?? this.isLoading,
-      );
+  }) => AuthState(
+    status: status ?? this.status,
+    userId: userId ?? this.userId,
+    displayName: displayName ?? this.displayName,
+    avatarUrl: avatarUrl ?? this.avatarUrl,
+    error: error,
+    isLoading: isLoading ?? this.isLoading,
+  );
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
@@ -88,10 +89,42 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isLoading: false,
       );
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: _parseError(e),
-      );
+      state = state.copyWith(isLoading: false, error: _parseError(e));
+    }
+  }
+
+  // Вход через Google/Яндекс: одноразовый code из редиректа + наш secret → обычный токен.
+  // Возвращает текст ошибки или null при успехе.
+  Future<String?> loginWithOAuthCode(String code, String secret) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final resp = await _ref
+          .read(apiClientProvider)
+          .post(
+            '/api/auth/session/exchange',
+            data: {'code': code, 'secret': secret},
+          );
+      final data = resp.data as Map<String, dynamic>;
+      if (data['kind'] == 'signup') {
+        state = state.copyWith(isLoading: false);
+        return 'Аккаунта с этим входом ещё нет. Зарегистрируйся на сайте или войди по почте';
+      }
+      final token = data['token'] as String?;
+      if (token == null || token.isEmpty) {
+        state = state.copyWith(isLoading: false);
+        return 'Не удалось войти, попробуй ещё раз';
+      }
+
+      await _storage.write(key: 'auth_token', value: token);
+      _invalidateUserData();
+      await _fetchMe();
+      state = state.copyWith(isLoading: false);
+      return state.status == AuthStatus.authenticated
+          ? null
+          : 'Не удалось загрузить профиль, попробуй ещё раз';
+    } catch (e) {
+      state = state.copyWith(isLoading: false);
+      return apiErrorMessage(e, 'Ссылка входа не подошла, попробуй ещё раз');
     }
   }
 

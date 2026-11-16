@@ -1,11 +1,14 @@
 import 'dart:io';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+
 import '../../../core/api/api_client.dart';
 import '../../../core/api/image_upload.dart';
 import '../../../core/api/api_error.dart';
+import '../../../shared/widgets/error_view.dart';
 import '../providers/profile_provider.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
@@ -75,7 +78,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 title: const Text('Камера'),
                 onTap: () => _pickImage(ImageSource.camera),
               ),
-              if (_pickedImage != null || ref.read(profileProvider).valueOrNull?.avatarUrl != null)
+              if (_pickedImage != null ||
+                  ref.read(profileProvider).valueOrNull?.avatarUrl != null)
                 ListTile(
                   iconColor: Theme.of(context).colorScheme.error,
                   textColor: Theme.of(context).colorScheme.error,
@@ -95,7 +99,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    setState(() { _saving = true; _error = null; });
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
 
     try {
       final dio = ref.read(apiClientProvider);
@@ -106,12 +113,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         avatarUrl = await uploadImage(dio, _pickedImage!);
       }
 
-      await dio.put('/api/auth/me', data: {
-        'display_name': _nameCtrl.text.trim(),
-        'username': _usernameCtrl.text.trim(),
-        'bio': _bioCtrl.text.trim(),
-        'avatar_url': avatarUrl,
-      });
+      await dio.put(
+        '/api/auth/me',
+        data: {
+          'display_name': _nameCtrl.text.trim(),
+          'username': _usernameCtrl.text.trim(),
+          'bio': _bioCtrl.text.trim(),
+          'avatar_url': avatarUrl,
+        },
+      );
 
       ref.invalidate(profileProvider);
 
@@ -134,7 +144,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     return Scaffold(
       body: profileAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('$e')),
+        error: (e, _) =>
+            ErrorView(error: e, onRetry: () => ref.invalidate(profileProvider)),
         data: (user) => Form(
           key: _formKey,
           child: CustomScrollView(
@@ -152,10 +163,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       Expanded(
                         child: Text(
                           'Редактировать профиль',
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ),
                       _saving
@@ -164,8 +173,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               child: SizedBox(
                                 width: 20,
                                 height: 20,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                             )
                           : TextButton(
@@ -205,16 +215,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                           fit: BoxFit.cover,
                                         )
                                       : user.avatarUrl != null
-                                          // Текущее фото с сервера
-                                          ? Image.network(
-                                              user.avatarUrl!,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (_, _, _) =>
-                                                  _AvatarPlaceholder(
-                                                      user.displayName),
-                                            )
-                                          : _AvatarPlaceholder(
-                                              user.displayName),
+                                      // Текущее фото с сервера
+                                      ? Image.network(
+                                          user.avatarUrl!,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, _, _) =>
+                                              _AvatarPlaceholder(
+                                                user.displayName,
+                                              ),
+                                        )
+                                      : _AvatarPlaceholder(user.displayName),
                                 ),
                               ),
                             ),
@@ -224,10 +234,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               decoration: BoxDecoration(
                                 color: scheme.primary,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: scheme.surface, width: 2),
+                                border: Border.all(
+                                  color: scheme.surface,
+                                  width: 2,
+                                ),
                               ),
-                              child: Icon(Icons.camera_alt,
-                                  size: 14, color: scheme.onPrimary),
+                              child: Icon(
+                                Icons.camera_alt,
+                                size: 14,
+                                color: scheme.onPrimary,
+                              ),
                             ),
                           ],
                         ),
@@ -241,7 +257,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           child: Text(
                             'Фото выбрано — сохрани для применения',
                             style: TextStyle(
-                                color: scheme.onSurfaceVariant, fontSize: 12),
+                              color: scheme.onSurfaceVariant,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
                       ),
@@ -256,9 +274,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           color: scheme.errorContainer,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Text(_error!,
-                            style: TextStyle(
-                                color: scheme.onErrorContainer, fontSize: 13)),
+                        child: Text(
+                          _error!,
+                          style: TextStyle(
+                            color: scheme.onErrorContainer,
+                            fontSize: 13,
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 14),
                     ],
@@ -280,11 +302,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           : null,
                     ),
                     const SizedBox(height: 14),
-                    _Field(
-                      label: 'О себе',
-                      controller: _bioCtrl,
-                      maxLines: 3,
-                    ),
+                    _Field(label: 'О себе', controller: _bioCtrl, maxLines: 3),
                     const SizedBox(height: 14),
                     _Field(
                       label: 'Email',
@@ -301,17 +319,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         child: _saving
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
-                            : const Text('Сохранить',
-                                style:
-                                    TextStyle(fontWeight: FontWeight.w600)),
+                            : const Text(
+                                'Сохранить',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 32),
@@ -332,13 +354,13 @@ class _AvatarPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        alignment: Alignment.center,
-        child: Text(
-          name.isNotEmpty ? name[0] : '?',
-          style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-        ),
-      );
+    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+    alignment: Alignment.center,
+    child: Text(
+      name.isNotEmpty ? name[0] : '?',
+      style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+    ),
+  );
 }
 
 class _Field extends StatelessWidget {

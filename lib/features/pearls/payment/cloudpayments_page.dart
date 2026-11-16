@@ -40,7 +40,10 @@ String newOrderNumber(PaymentKind kind) {
   final rnd = Random.secure();
   // Как и сайт, перебираем, пока контрольный символ не попадёт в основной алфавит
   while (true) {
-    final body = List.generate(9, (_) => _alphabet[rnd.nextInt(_alphabet.length)]).join();
+    final body = List.generate(
+      9,
+      (_) => _alphabet[rnd.nextInt(_alphabet.length)],
+    ).join();
     final check = _checkSymbol(body);
     if (_alphabet.contains(check)) return '$prefix-$body$check';
   }
@@ -66,7 +69,7 @@ Future<PaymentResult?> openCloudPayments(
         'vat': null,
         'method': 4,
         'object': 4,
-      }
+      },
     ],
     'email': mail,
     'amounts': {'electronic': option.amount},
@@ -117,14 +120,19 @@ class _CloudPaymentsPageState extends State<_CloudPaymentsPage> {
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.transparent)
       ..addJavaScriptChannel('MiokoPay', onMessageReceived: _onMessage)
-      ..setNavigationDelegate(NavigationDelegate(
-        onPageFinished: (_) {
-          if (mounted) setState(() => _loading = false);
-        },
-        onNavigationRequest: _onNavigation,
-      ))
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageFinished: (_) {
+            if (mounted) setState(() => _loading = false);
+          },
+          onNavigationRequest: _onNavigation,
+        ),
+      )
       // baseUrl — страница тарифов сайта: виджет видит тот же адрес, что и при оплате на mioko.ai
-      ..loadHtmlString(_html(widget.params), baseUrl: 'https://mioko.ai/mioko-pearls');
+      ..loadHtmlString(
+        _html(widget.params),
+        baseUrl: 'https://mioko.ai/mioko-pearls',
+      );
   }
 
   // СБП, T-Pay и deep link'и банков должны открываться в приложении банка, а не в WebView
@@ -132,14 +140,18 @@ class _CloudPaymentsPageState extends State<_CloudPaymentsPage> {
     final uri = Uri.tryParse(request.url);
     if (uri == null) return NavigationDecision.prevent;
     final isWeb = uri.scheme == 'http' || uri.scheme == 'https';
-    final isBankLink = uri.host == 'qr.nspk.ru' || uri.host.endsWith('.nspk.ru');
+    final isBankLink =
+        uri.host == 'qr.nspk.ru' || uri.host.endsWith('.nspk.ru');
     if (isWeb && !isBankLink) return NavigationDecision.navigate;
 
     var target = uri;
     // intent://… — Android-ссылка на приложение; берём запасной https-адрес, если он есть
     if (uri.scheme == 'intent') {
-      final fallback = RegExp(r'S\.browser_fallback_url=([^;]+)').firstMatch(request.url);
-      if (fallback != null) target = Uri.parse(Uri.decodeComponent(fallback.group(1)!));
+      final fallback = RegExp(r'S\.browser_fallback_url=([^;]+)')
+          .firstMatch(request.url);
+      if (fallback != null) {
+        target = Uri.parse(Uri.decodeComponent(fallback.group(1)!));
+      }
     }
     final ok = await launchUrl(target, mode: LaunchMode.externalApplication);
     if (!ok && mounted) {
@@ -156,7 +168,9 @@ class _CloudPaymentsPageState extends State<_CloudPaymentsPage> {
     final PaymentResult? result = switch (msg['t']) {
       'success' => const PaymentSuccess(),
       'fail' => PaymentFailed(msg['m'] as String?),
-      'error' => PaymentFailed(msg['m'] as String? ?? 'Виджет оплаты не загрузился'),
+      'error' => PaymentFailed(
+        msg['m'] as String? ?? 'Виджет оплаты не загрузился',
+      ),
       _ => null, // 'hide' — пользователь закрыл виджет
     };
     _done = true;
