@@ -8,6 +8,8 @@ import '../providers/catalog_provider.dart';
 import '../../../shared/widgets/avatar_image.dart';
 import '../../profile/providers/profile_provider.dart';
 import '../models/catalog_item.dart';
+import '../../chat/providers/chat_room_provider.dart';
+import '../../chat/screens/chat_screen.dart';
 
 // Hero-тег уникален для каждой карточки: один персонаж может стоять в нескольких лентах сразу
 class ItemDetailArgs {
@@ -509,12 +511,51 @@ TextSpan roleplaySpan(String text, TextStyle base, Color actionColor) {
   return TextSpan(style: base, children: spans);
 }
 
-class _StartChatBar extends StatelessWidget {
+// «Начать чат»: открывает существующий чат с персонажем или создаёт новый
+class _StartChatBar extends ConsumerStatefulWidget {
   const _StartChatBar({required this.item});
   final CatalogItem item;
 
   @override
+  ConsumerState<_StartChatBar> createState() => _StartChatBarState();
+}
+
+class _StartChatBarState extends ConsumerState<_StartChatBar> {
+  bool _busy = false;
+
+  Future<void> _start() async {
+    final item = widget.item;
+    setState(() => _busy = true);
+    try {
+      final chatId = await openChatWith(
+        ref,
+        isStory: item.isStory,
+        id: item.id,
+      );
+      if (!mounted) return;
+      openChat(
+        context,
+        chatId,
+        ChatArgs(
+          name: item.name,
+          avatar: item.avatar,
+          isStory: item.isStory,
+          subjectId: item.id,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(e, 'Не удалось открыть чат'))),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final item = widget.item;
     final scheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
@@ -528,9 +569,7 @@ class _StartChatBar extends StatelessWidget {
           child: SizedBox(
             height: 52,
             child: FilledButton.icon(
-              onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Запуск чата скоро появится')),
-              ),
+              onPressed: _busy ? null : _start,
               style: FilledButton.styleFrom(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -540,11 +579,16 @@ class _StartChatBar extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              icon: Icon(
-                item.isStory
-                    ? Icons.play_arrow_rounded
-                    : Icons.chat_bubble_rounded,
-              ),
+              icon: _busy
+                  ? const SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2.5),
+                    )
+                  : Icon(
+                      item.isStory
+                          ? Icons.play_arrow_rounded
+                          : Icons.chat_bubble_rounded,
+                    ),
               label: Text(item.isStory ? 'Начать историю' : 'Начать чат'),
             ),
           ),

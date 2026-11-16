@@ -9,6 +9,7 @@ import '../../chat/providers/chats_provider.dart';
 import '../../catalog/providers/catalog_provider.dart';
 import '../../personas/providers/personas_provider.dart';
 import '../../lorebooks/providers/lorebooks_provider.dart';
+import 'login_methods_provider.dart';
 
 // Состояние авторизации
 enum AuthStatus { unknown, authenticated, unauthenticated }
@@ -153,6 +154,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
 
+  // Нужен для привязки способа входа: WebView передаёт его серверу как cookie
+  Future<String?> readToken() => _storage.read(key: 'auth_token');
+
   // Сбрасывает кэш всех провайдеров, привязанных к аккаунту
   void _invalidateUserData() {
     _ref.invalidate(profileProvider);
@@ -164,6 +168,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     _ref.invalidate(catalogAuthorsProvider);
     _ref.invalidate(personasProvider);
     _ref.invalidate(myLorebooksProvider);
+    _ref.invalidate(loginMethodsProvider);
     _ref.invalidate(lorebookPlaceProvider);
     _ref.invalidate(lorebookProvider);
     _ref.invalidate(lorebookTargetsProvider);

@@ -53,7 +53,11 @@ class SettingsScreen extends ConsumerWidget {
                 label: 'Лорбуки',
                 onTap: () => context.push('/lorebooks'),
               ),
-              _Tile(icon: Icons.link, label: 'Способы входа', onTap: () {}),
+              _Tile(
+                icon: Icons.link,
+                label: 'Способы входа',
+                onTap: () => context.push('/settings/login-methods'),
+              ),
 
               // ── Настройки приложения ──────────────────
               _SectionHeader(label: 'Настройки приложения'),
@@ -70,7 +74,7 @@ class SettingsScreen extends ConsumerWidget {
               _Tile(
                 icon: Icons.notifications_outlined,
                 label: 'Уведомления',
-                onTap: () {},
+                onTap: () => context.push('/settings/notifications'),
               ),
 
               // ── Подписка и покупки ────────────────────
@@ -92,12 +96,12 @@ class SettingsScreen extends ConsumerWidget {
                 icon: Icons.headset_mic_outlined,
                 label: 'Связаться с поддержкой',
                 trailing: const Icon(Icons.open_in_new, size: 16),
-                onTap: () {},
+                onTap: () => openUrl(context, Links.support),
               ),
               _Tile(
                 icon: Icons.description_outlined,
                 label: 'Документы',
-                onTap: () {},
+                onTap: () => context.push('/documents'),
               ),
               _Tile(
                 icon: Icons.info_outline,

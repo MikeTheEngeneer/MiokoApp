@@ -4,17 +4,21 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/screens/login_screen.dart';
+import '../../features/auth/screens/login_methods_screen.dart';
 import '../../features/home/screens/home_screen.dart';
 import '../../features/explore/screens/explore_screen.dart';
 import '../../features/chat/screens/chat_list_screen.dart';
 import '../../features/pearls/screens/pearls_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
+import '../../features/settings/screens/notifications_screen.dart';
+import '../../features/settings/screens/documents_screen.dart';
 import '../../features/profile/screens/edit_profile_screen.dart';
 import '../../features/personas/screens/personas_screen.dart';
 import '../../features/personas/screens/create_persona_screen.dart';
 import '../../features/catalog/screens/item_detail_screen.dart';
 import '../../features/search/screens/search_screen.dart';
+import '../../features/chat/screens/chat_screen.dart';
 import '../../features/lorebooks/screens/lorebooks_screen.dart';
 import '../../features/lorebooks/screens/lorebook_screen.dart';
 import '../../shared/widgets/main_shell.dart';
@@ -69,6 +73,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
 
+      // Переписка — на весь экран, без нижней панели
+      GoRoute(
+        path: '/chat/:id',
+        pageBuilder: (_, state) => _buildPage(
+          ChatScreen(
+            chatId: state.pathParameters['id']!,
+            args: state.extra is ChatArgs ? state.extra as ChatArgs : null,
+          ),
+        ),
+      ),
       GoRoute(
         path: '/search',
         pageBuilder: (_, _) => _buildPage(const SearchScreen()),
@@ -99,6 +113,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/personas/new',
         pageBuilder: (_, _) => _buildPage(const CreatePersonaScreen()),
+      ),
+      GoRoute(
+        path: '/documents',
+        pageBuilder: (_, _) => _buildPage(const DocumentsScreen()),
+      ),
+      GoRoute(
+        path: '/settings/notifications',
+        pageBuilder: (_, _) => _buildPage(const NotificationsScreen()),
+      ),
+      GoRoute(
+        path: '/settings/login-methods',
+        pageBuilder: (_, _) => _buildPage(const LoginMethodsScreen()),
       ),
       GoRoute(
         path: '/lorebooks',

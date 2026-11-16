@@ -2,7 +2,9 @@ import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class Links {
+  static const site = 'https://mioko.ai';
   static const telegram = 'https://t.me/mioko_ai';
+  static const support = 'https://t.me/miokosupport';
   static const vk = 'https://vk.ru/mioko_ai';
   static const developerGithub = 'https://github.com/MikeTheEngeneer';
   static const privacy = 'https://mioko.ai/privacy';

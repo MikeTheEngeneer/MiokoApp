@@ -213,6 +213,7 @@ allprojects {
 | Раздел | Запрос |
 |---|---|
 | Вход | `POST /api/auth/login` |
+| Способы входа | `GET /api/auth/methods` · `POST /api/auth/unlink` (`{method}`) · привязка: `/api/auth/yandex?link=1&m=…` с cookie `mk_token` |
 | Профиль | `GET /api/auth/me` · `PUT /api/auth/me` |
 | Статистика | `GET /api/authors/<id>` |
 | Загрузка фото | `POST /api/images/upload` |
@@ -220,8 +221,10 @@ allprojects {
 | Каталог | `GET /api/catalog/sections?genres=…&seed=…` |
 | Поиск | `GET /api/catalog?q=…&sort=random&seed=…&cursor=…` · `GET /api/catalog/facets?q=…` |
 | Персонаж / история | `GET /api/characters/<id>` · `GET /api/stories/<id>` |
-| Чаты | `GET /api/chats` |
+| Чаты | `GET /api/chats` · `POST /api/chats` (`{characterId}` \| `{storyId}`) · `DELETE /api/chats/<id>` · `GET /api/chats/tide-status` |
+| Переписка | `GET /api/chats/<id>/messages?limit=&before=` · `POST …/messages` (`{content}`, ответ — SSE) · `POST …/regenerate` (SSE) · `GET …/stream` (SSE) · `POST …/messages/<mid>/variant?from=<mid>` (`{index}`) |
 | Персоны | `GET` · `POST /api/personas` · `DELETE /api/personas/<id>` |
+| Уведомления | `GET` · `PUT /api/notifications/prefs` (`{<ключ>: bool}`) |
 | Баланс и тарифы | `GET /api/payments/me` · `GET /api/payments/config` |
 | Лорбуки | `GET /api/lorebooks/mine` · `GET /api/lorebooks/public?q=…&before=…` · `GET /api/lorebooks/<id>` · `GET /api/lorebooks/<id>/targets` |
 | Подключение лорбука | `GET` · `POST /api/lorebooks/places/<mine\|persona>/<me\|id персоны>` (`{lorebook}`) · `DELETE …/<id лорбука>` |

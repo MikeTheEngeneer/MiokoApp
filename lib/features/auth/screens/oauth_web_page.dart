@@ -31,6 +31,12 @@ class OAuthCode extends OAuthResult {
   const OAuthCode(this.code, this.secret);
 }
 
+// Итог привязки способа входа: ok | taken | busy (сайт получает его в ?link=…)
+class OAuthLinked extends OAuthResult {
+  final String status;
+  const OAuthLinked(this.status);
+}
+
 class OAuthError extends OAuthResult {
   final String message;
   const OAuthError(this.message);
@@ -49,19 +55,28 @@ Future<OAuthResult?> openOAuthWebView(
   BuildContext context, {
   required String provider,
   required String title,
+  // Привязка способа входа к текущему аккаунту: сюда передают его токен.
+  // Сайт делает то же самое переходом в браузере, где токен лежит в cookie mk_token
+  String? linkToken,
 }) {
   return Navigator.of(context).push<OAuthResult>(
     MaterialPageRoute(
       fullscreenDialog: true,
-      builder: (_) => _OAuthWebPage(provider: provider, title: title),
+      builder: (_) =>
+          _OAuthWebPage(provider: provider, title: title, linkToken: linkToken),
     ),
   );
 }
 
 class _OAuthWebPage extends StatefulWidget {
-  const _OAuthWebPage({required this.provider, required this.title});
+  const _OAuthWebPage({
+    required this.provider,
+    required this.title,
+    this.linkToken,
+  });
   final String provider;
   final String title;
+  final String? linkToken;
 
   @override
   State<_OAuthWebPage> createState() => _OAuthWebPageState();
@@ -89,12 +104,35 @@ class _OAuthWebPageState extends State<_OAuthWebPage> {
           // Подстраховка: если редирект прошёл мимо onNavigationRequest
           onPageStarted: _intercept,
         ),
-      )
-      ..loadRequest(
-        Uri.parse(
-          'https://api.mioko.ai/api/auth/${widget.provider}?m=$_secret',
-        ),
       );
+    _start();
+  }
+
+  static const _cookieDomain = 'api.mioko.ai';
+
+  Future<void> _setSessionCookie(String value) =>
+      WebViewCookieManager().setCookie(
+        WebViewCookie(name: 'mk_token', value: value, domain: _cookieDomain),
+      );
+
+  Future<void> _start() async {
+    final token = widget.linkToken;
+    // По этой cookie сервер понимает, к какому аккаунту привязывать
+    if (token != null) await _setSessionCookie(token);
+    if (!mounted) return;
+    await _controller.loadRequest(
+      Uri.parse(
+        'https://api.mioko.ai/api/auth/${widget.provider}'
+        '?${token != null ? 'link=1&' : ''}m=$_secret',
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    // Токен не должен оставаться в cookie встроенного браузера
+    if (widget.linkToken != null) _setSessionCookie('');
+    super.dispose();
   }
 
   // Ловим возврат на mioko.ai: там в #code — одноразовый код, в ?error — причина отказа
@@ -109,8 +147,11 @@ class _OAuthWebPageState extends State<_OAuthWebPage> {
 
     final error = uri.queryParameters['error'];
     final code = Uri.splitQueryString(uri.fragment)['code'];
+    final link = uri.queryParameters['link'];
     final OAuthResult result;
-    if (code != null && code.isNotEmpty) {
+    if (widget.linkToken != null && link != null) {
+      result = OAuthLinked(link);
+    } else if (code != null && code.isNotEmpty) {
       result = OAuthCode(code, _secret);
     } else {
       result = OAuthError(

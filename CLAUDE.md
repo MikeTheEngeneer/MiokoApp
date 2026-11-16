@@ -44,12 +44,12 @@
 
 - Почта: `POST /api/auth/login`.
 - Яндекс: WebView `api.mioko.ai/api/auth/yandex?m=<secret 32 hex>` → перехват редиректа на `mioko.ai/auth/complete#code=…` → `POST /api/auth/session/exchange {code, secret}`. Сервер пускает только аккаунты, где Яндекс уже привязан.
+- Способы входа (`auth/screens/login_methods_screen.dart`): `GET /api/auth/methods`, `POST /api/auth/unlink {method}`. Привязка Яндекса — тот же WebView с `?link=1` и cookie `mk_token=<токен>` на `api.mioko.ai` (сайт узнаёт аккаунт по ней; после — затираем), итог в редиректе `mioko.ai/settings/account?link=ok|taken|busy`. Задать пароль (`/api/auth/create-password`, нужен код из письма) и привязка Google — не сделаны.
 - **Google не сделан.** Вход Google в WebView запрещён Google (403 disallowed_useragent) — **не подменять User-Agent**. Нативный `/api/auth/app/google` требует регистрации нашего пакета в проекте Mioko — недоступно. Остался план: Custom Tab на `/api/auth/google?m=<secret>&app=1` → сервер ведёт на `https://mioko.ai/auth/complete-app#code=…`; домен по `assetlinks.json` принадлежит `ai.mioko.app`, поэтому пользователь должен один раз вручную включить «Открывать по умолчанию → mioko.ai» для нашего приложения (не сработает, если стоит официальное приложение). Сейчас кнопка Google показывает окно «скоро появится».
 
 ## Что дальше
 
-- Экран чата: открытие, сообщения, отправка (сайт стримит ответ через SSE — `sendMessageStream` в бандле).
-- Кнопка «Начать чат» на странице персонажа — нужен запрос создания чата.
+- Чат сделан (`features/chat`): SSE разбирает `chat_stream.dart` (`data: {reset|ids|delta|replace|error|done}`), отказ до потока — JSON `{error, code}` (`tide_limit` — дневной лимит без Wave). Не сделано: правка/удаление сообщений (`PATCH`/`DELETE …/messages/<mid>?from=`), перемотка (`POST …/rewind`), копия (`POST …/branch`), персона чата (`PATCH …/persona`), настройки стиля (`GET/PATCH …/settings`), фото в сообщении, «Лорбук чата».
 - Фильтры поиска — названия параметров неизвестны (угаданные `genres`/`settings`/`moods`/`traits` игнорируются), нужен URL с сайта.
 - Редактирование персон — `PATCH /api/personas/<id>` (из бандла, тело не проверено).
 - Лорбуки, этап 2: создание/редактирование (`POST /api/lorebooks`, `PUT /api/lorebooks/<id>`, формат тела — снять HAR). Сейчас есть просмотр, поиск и подключение к «все мои чаты»/персоне (`features/lorebooks`). Места подключения на сайте: `mine/me`, `persona/<pid>`, `chat/<id>` (1, «Лорбук чата» — когда будет экран чата), `character`/`story` (карточки автора).
