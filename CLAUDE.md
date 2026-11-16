@@ -12,6 +12,7 @@
 
 - Flutter 3.50: импорт `package:material_ui/material_ui.dart`, **не** `flutter/material.dart`.
 - Провайдер обрывает Maven Central → `~/.gradle/init.d/maven-mirror.init.gradle.kts` перенаправляет на зеркало Google (текст в README). Без него Gradle не собирается.
+- `INTERNET` прописан в `main/AndroidManifest.xml` — без него релиз не ходит в сеть (в debug Flutter добавляет его сам, поэтому ошибка видна только в релизе).
 - `MainActivity` наследует `FlutterFragmentActivity` — иначе `image_picker` падает с channel-error.
 
 ## Архитектура и правила

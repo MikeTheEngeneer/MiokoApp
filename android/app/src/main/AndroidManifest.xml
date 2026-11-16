@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Интернет. В debug/profile его добавляет Flutter сам, а в релизе —
+         только отсюда: без этой строки релиз не ходит в сеть вообще -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Доступ к медиафайлам (Android 13+) -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
     <!-- Камера -->
