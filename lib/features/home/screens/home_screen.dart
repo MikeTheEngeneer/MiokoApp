@@ -25,8 +25,9 @@ class HomeScreen extends ConsumerWidget {
     }
 
     // Обе ленты упали — показываем одну ошибку на весь экран, а не две одинаковые
-    final failed =
-        hot.hasError && !hot.hasValue && fresh.hasError && !fresh.hasValue;
+    // Ошибка может прийти поверх старых данных (были загружены, потом пропал интернет) —
+    // поэтому смотрим только на hasError, иначе каждая лента рисует своего котика
+    final failed = hot.hasError && fresh.hasError;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -106,7 +107,9 @@ class _FeedRow extends ConsumerWidget {
     final heroPrefix = 'home-${sort.name}';
     return ref
         .watch(catalogFeedProvider(sort))
+        // skipError: если поверх ошибки остались старые данные — показываем их, а не котика
         .when(
+          skipError: true,
           loading: () => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
