@@ -22,6 +22,7 @@ import '../../features/chat/screens/chat_screen.dart';
 import '../../features/lorebooks/screens/lorebooks_screen.dart';
 import '../../features/lorebooks/screens/lorebook_screen.dart';
 import '../../shared/widgets/main_shell.dart';
+import '../../shared/widgets/mioko_icons.dart';
 
 // Fade + лёгкий slide снизу — используется для всех push-переходов
 Page<void> _buildPage(Widget child) => CustomTransitionPage(
@@ -45,14 +46,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/home',
     redirect: (context, state) {
+      final loc = state.matchedLocation;
+      // Пока проверяем сохранённый токен — заставка, а не экран входа
+      // (иначе при запуске на секунду мелькал вход)
+      if (authState.status == AuthStatus.unknown) {
+        return loc == '/splash' ? null : '/splash';
+      }
       final isLoggedIn = authState.status == AuthStatus.authenticated;
-      final isOnLogin = state.matchedLocation == '/login';
+      final isOnLogin = loc == '/login';
 
+      if (loc == '/splash') return isLoggedIn ? '/home' : '/login';
       if (!isLoggedIn && !isOnLogin) return '/login';
       if (isLoggedIn && isOnLogin) return '/home';
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/splash',
+        pageBuilder: (_, _) => const NoTransitionPage(child: _Splash()),
+      ),
       GoRoute(
         path: '/login',
         pageBuilder: (_, _) => _buildPage(const LoginScreen()),
@@ -161,3 +173,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+// Заставка на время проверки входа (обычно доли секунды)
+class _Splash extends StatelessWidget {
+  const _Splash();
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: Theme.of(context).colorScheme.surface,
+    body: const Center(child: MiokoLogo(size: 88)),
+  );
+}

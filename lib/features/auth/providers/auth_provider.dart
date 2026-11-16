@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -141,9 +142,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
         displayName: user['display_name'] as String?,
         avatarUrl: user['avatar_url'] as String?,
       );
+    } on DioException catch (e) {
+      final code = e.response?.statusCode;
+      if (code == 401 || code == 403) {
+        // Токен протух или отозван — правда нужно войти заново
+        await _storage.delete(key: 'auth_token');
+        state = state.copyWith(status: AuthStatus.unauthenticated);
+      } else {
+        // Нет интернета или сервер прилёг — токен не трогаем: пускаем
+        // в приложение, а экраны сами покажут котика «нет интернета»
+        state = state.copyWith(status: AuthStatus.authenticated);
+      }
     } catch (_) {
-      await _storage.delete(key: 'auth_token');
-      state = state.copyWith(status: AuthStatus.unauthenticated);
+      state = state.copyWith(status: AuthStatus.authenticated);
     }
   }
 
