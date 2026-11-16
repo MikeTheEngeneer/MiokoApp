@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Фон иконки: тёмный фон приложения. Прозрачный Samsung всё равно
+         закрашивает чёрным, а без слоёв кладёт иконку в белую рамку -->
+    <color name="ic_launcher_background">#010D19</color>
+</resources>
