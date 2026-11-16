@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/api/api_error.dart';
 import '../../../shared/models/media_avatar.dart';
 import '../../../shared/widgets/avatar_image.dart';
 import '../../../shared/widgets/error_view.dart';
@@ -168,39 +169,181 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
-  void _messageMenu(ChatMessage m, bool isLast) {
+  // Меню действий с сообщением — всплывает рядом с местом нажатия,
+  // как на сайте: Копировать / Редактировать / Новый чат отсюда | Пожаловаться / Удалить
+  Future<void> _messageMenu(ChatMessage m, Offset at) async {
     final room = ref.read(chatRoomProvider(widget.chatId));
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+    final scheme = Theme.of(context).colorScheme;
+    final hasText = m.content.trim().isNotEmpty;
+    final saved = m.isSaved && !room.generating;
+
+    final canCopy = hasText;
+    final canEdit = hasText && saved;
+    final canBranch = saved;
+    final canReport = !m.fromUser && m.isSaved;
+    final canDelete = saved && m.id != room.firstAssistantId;
+
+    PopupMenuItem<String> item(
+      String value,
+      IconData icon,
+      String title, {
+      bool danger = false,
+    }) {
+      final color = danger ? scheme.error : null;
+      return PopupMenuItem(
+        value: value,
+        height: 44,
+        child: Row(
           children: [
-            ListTile(
-              leading: const Icon(Icons.copy_rounded),
-              title: const Text('Копировать'),
-              onTap: () {
-                Clipboard.setData(ClipboardData(text: m.content));
-                Navigator.pop(ctx);
-                _notice('Текст скопирован');
-              },
-            ),
-            if (isLast && !m.fromUser && room.canRegenerate)
-              ListTile(
-                leading: const Icon(Icons.refresh_rounded),
-                title: const Text('Ответить заново'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  ref
-                      .read(chatRoomProvider(widget.chatId).notifier)
-                      .regenerate();
-                },
-              ),
+            Icon(icon, size: 20, color: danger ? scheme.error : scheme.primary),
+            const SizedBox(width: 12),
+            Text(title, style: TextStyle(color: color)),
           ],
         ),
+      );
+    }
+
+    HapticFeedback.selectionClick();
+    // Точка нажатия → RelativeRect: меню само сдвинется, чтобы влезть в экран
+    final overlay =
+        Overlay.of(context).context.findRenderObject()! as RenderBox;
+    final local = overlay.globalToLocal(at);
+    final picked = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromRect(
+        local & Size.zero,
+        Offset.zero & overlay.size,
+      ),
+      color: scheme.surfaceContainer,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: scheme.outlineVariant),
+      ),
+      items: [
+        if (canCopy) item('copy', Icons.copy_rounded, 'Копировать'),
+        if (canEdit) item('edit', Icons.edit_outlined, 'Редактировать'),
+        if (canBranch)
+          item('branch', Icons.add_comment_outlined, 'Новый чат отсюда'),
+        if ((canReport || canDelete) && (canCopy || canEdit || canBranch))
+          const PopupMenuDivider(),
+        if (canReport) item('report', Icons.flag_outlined, 'Пожаловаться'),
+        if (canDelete)
+          item('delete', Icons.delete_outline_rounded, 'Удалить', danger: true),
+      ],
+    );
+    if (picked == null || !mounted) return;
+    switch (picked) {
+      case 'copy':
+        await Clipboard.setData(ClipboardData(text: m.content));
+        _notice('Текст скопирован');
+      case 'edit':
+        await _editMessage(m);
+      case 'branch':
+        await _branchFrom(m);
+      case 'report':
+        await _reportMessage(m);
+      case 'delete':
+        await _deleteMessage(m);
+    }
+  }
+
+  ChatRoomNotifier get _room =>
+      ref.read(chatRoomProvider(widget.chatId).notifier);
+
+  Future<void> _editMessage(ChatMessage m) async {
+    final text = await showDialog<String>(
+      context: context,
+      builder: (_) => _EditMessageDialog(initial: m.content),
+    );
+    if (text == null || text.trim() == m.content.trim() || !mounted) return;
+    try {
+      await _room.editMessage(m.id, text.trim());
+    } catch (e) {
+      _notice(apiErrorMessage(e, 'Не удалось сохранить правку'));
+    }
+  }
+
+  Future<bool> _confirm({
+    required String title,
+    required String text,
+    required String action,
+    bool danger = false,
+  }) async {
+    final scheme = Theme.of(context).colorScheme;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Text(text),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            style: danger
+                ? FilledButton.styleFrom(
+                    backgroundColor: scheme.error,
+                    foregroundColor: scheme.onError,
+                  )
+                : null,
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(action),
+          ),
+        ],
       ),
     );
+    return ok == true;
+  }
+
+  Future<void> _deleteMessage(ChatMessage m) async {
+    final ok = await _confirm(
+      title: 'Удалить сообщение?',
+      text: 'Оно исчезнет из переписки, а персонаж забудет то, что из него узнал',
+      action: 'Удалить',
+      danger: true,
+    );
+    if (!ok || !mounted) return;
+    try {
+      await _room.deleteMessage(m.id);
+    } catch (e) {
+      _notice(apiErrorMessage(e, 'Не удалось удалить сообщение'));
+    }
+  }
+
+  Future<void> _branchFrom(ChatMessage m) async {
+    final ok = await _confirm(
+      title: 'Создать копию чата?',
+      text:
+          'Будет создана копия чата до этого момента, а текущий чат останется без изменений.',
+      action: 'Создать',
+    );
+    if (!ok || !mounted) return;
+    try {
+      final newId = await _room.branchFrom(m.id);
+      if (!mounted) return;
+      _notice('Копия создана');
+      // Как на сайте — сразу переходим в копию (старый чат остаётся в списке)
+      context.pushReplacement('/chat/$newId', extra: _args);
+    } catch (e) {
+      _notice(apiErrorMessage(e, 'Не удалось создать копию'));
+    }
+  }
+
+  Future<void> _reportMessage(ChatMessage m) async {
+    final r = await showModalBottomSheet<(String, String)>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => const _ReportSheet(),
+    );
+    if (r == null || !mounted) return;
+    try {
+      await _room.reportMessage(m.id, r.$1, r.$2);
+      _notice('Спасибо, жалоба отправлена');
+    } catch (e) {
+      _notice(apiErrorMessage(e, 'Жалоба не отправилась'));
+    }
   }
 
   @override
@@ -334,7 +477,7 @@ class _MessageList extends StatelessWidget {
   final ChatRoomState room;
   final ScrollController controller;
   final MediaAvatar? avatar;
-  final void Function(ChatMessage, bool isLast) onLongPress;
+  final void Function(ChatMessage, Offset at) onLongPress;
   final VoidCallback onRegenerate;
   final ValueChanged<int> onPickVariant;
 
@@ -378,7 +521,7 @@ class _MessageList extends StatelessWidget {
                   onPickVariant: onPickVariant,
                 )
               : null,
-          onLongPress: () => onLongPress(m, isLast),
+          onLongPress: (at) => onLongPress(m, at),
         );
       },
     );
@@ -401,7 +544,8 @@ class _Bubble extends StatelessWidget {
   final bool showAvatar;
   final bool typing;
   final Widget? footer;
-  final VoidCallback onLongPress;
+  // Где нажали (глобальные координаты) — там и откроется меню
+  final ValueChanged<Offset> onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -410,7 +554,7 @@ class _Bubble extends StatelessWidget {
     final maxWidth = MediaQuery.sizeOf(context).width * (user ? 0.78 : 0.86);
 
     final bubble = GestureDetector(
-      onLongPress: typing ? null : onLongPress,
+      onLongPressStart: typing ? null : (d) => onLongPress(d.globalPosition),
       child: Container(
         constraints: BoxConstraints(maxWidth: maxWidth),
         padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
@@ -706,6 +850,171 @@ class _Composer extends StatelessWidget {
                         )
                       : const Icon(Icons.arrow_upward_rounded),
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Правка текста сообщения
+class _EditMessageDialog extends StatefulWidget {
+  const _EditMessageDialog({required this.initial});
+  final String initial;
+
+  @override
+  State<_EditMessageDialog> createState() => _EditMessageDialogState();
+}
+
+class _EditMessageDialogState extends State<_EditMessageDialog> {
+  late final _c = TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Редактировать'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: TextField(
+          controller: _c,
+          autofocus: true,
+          minLines: 3,
+          maxLines: 10,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Отмена'),
+        ),
+        ListenableBuilder(
+          listenable: _c,
+          builder: (context, _) => FilledButton(
+            onPressed: _c.text.trim().isEmpty
+                ? null
+                : () => Navigator.pop(context, _c.text),
+            child: const Text('Сохранить'),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Жалоба на ответ: причины и коды — как на сайте
+class _ReportSheet extends StatefulWidget {
+  const _ReportSheet();
+
+  @override
+  State<_ReportSheet> createState() => _ReportSheetState();
+}
+
+class _ReportSheetState extends State<_ReportSheet> {
+  static const _reasons = [
+    ('obscene', 'Непристойность'),
+    ('violence', 'Жестокость или угрозы'),
+    ('impersonation', 'Выдаёт себя за реального человека'),
+    ('illegal', 'Незаконное содержание'),
+    ('other', 'Другое'),
+  ];
+
+  String? _reason;
+  final _note = TextEditingController();
+
+  @override
+  void dispose() {
+    _note.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return SafeArea(
+      child: Padding(
+        // Поднимаемся над клавиатурой
+        padding: EdgeInsets.fromLTRB(
+          20,
+          0,
+          20,
+          16 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Пожаловаться на ответ',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Модератор прочитает реплику и разберётся. Персонаж не узнает о жалобе.',
+                style: TextStyle(color: scheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: 8),
+              for (final (code, label) in _reasons)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  leading: Icon(
+                    _reason == code
+                        ? Icons.radio_button_checked_rounded
+                        : Icons.radio_button_unchecked_rounded,
+                    color: _reason == code
+                        ? scheme.primary
+                        : scheme.onSurfaceVariant,
+                  ),
+                  title: Text(label, style: theme.textTheme.bodyLarge),
+                  onTap: () => setState(() => _reason = code),
+                ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _note,
+                minLines: 2,
+                maxLines: 4,
+                maxLength: 500,
+                decoration: const InputDecoration(
+                  hintText: 'Что именно не так — по желанию',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Отмена'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: _reason == null
+                          ? null
+                          : () => Navigator.pop(context, (
+                              _reason!,
+                              _note.text.trim(),
+                            )),
+                      child: const Text('Отправить'),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

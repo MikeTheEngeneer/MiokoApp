@@ -162,6 +162,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     _ref.invalidate(profileProvider);
     _ref.invalidate(paymentProvider);
     _ref.invalidate(profileStatsProvider);
+    _ref.invalidate(myWorksProvider);
+    _ref.invalidate(favoritesProvider);
+    _ref.invalidate(receivedGiftsProvider);
     _ref.invalidate(chatsProvider);
     _ref.invalidate(catalogFeedProvider);
     _ref.invalidate(catalogSectionsProvider);

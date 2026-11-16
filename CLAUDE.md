@@ -49,9 +49,9 @@
 
 ## Что дальше
 
-- Чат сделан (`features/chat`): SSE разбирает `chat_stream.dart` (`data: {reset|ids|delta|replace|error|done}`), отказ до потока — JSON `{error, code}` (`tide_limit` — дневной лимит без Wave). Не сделано: правка/удаление сообщений (`PATCH`/`DELETE …/messages/<mid>?from=`), перемотка (`POST …/rewind`), копия (`POST …/branch`), персона чата (`PATCH …/persona`), настройки стиля (`GET/PATCH …/settings`), фото в сообщении, «Лорбук чата».
+- Чат сделан (`features/chat`): SSE разбирает `chat_stream.dart` (`data: {reset|ids|delta|replace|error|done}`), отказ до потока — JSON `{error, code}` (`tide_limit` — дневной лимит без Wave). Меню сообщения (долгое нажатие, `showMenu` у пальца): копировать, правка (`PATCH …/messages/<mid>?from=<mid> {content}`), «Новый чат отсюда» (`POST …/branch?limit=50 {messageId}` → `chat.id`), жалоба (`POST …/messages/<mid>/report {reason, note}`), удаление (`DELETE …/messages/<mid>?from=<mid>`, кроме приветствия). Не сделано: перемотка (`POST …/rewind?from= {messageId}`), персона чата (`PATCH …/persona`), настройки стиля (`GET/PATCH …/settings`), фото в сообщении, «Лорбук чата».
 - Фильтры поиска — названия параметров неизвестны (угаданные `genres`/`settings`/`moods`/`traits` игнорируются), нужен URL с сайта.
 - Редактирование персон — `PATCH /api/personas/<id>` (из бандла, тело не проверено).
 - Лорбуки, этап 2: создание/редактирование (`POST /api/lorebooks`, `PUT /api/lorebooks/<id>`, формат тела — снять HAR). Сейчас есть просмотр, поиск и подключение к «все мои чаты»/персоне (`features/lorebooks`). Места подключения на сайте: `mine/me`, `persona/<pid>`, `chat/<id>` (1, «Лорбук чата» — когда будет экран чата), `character`/`story` (карточки автора).
-- Вкладки «Персонажи»/«Истории» в профиле — данные есть в `GET /api/authors/<id>`.
+- Вкладки профиля сделаны (`profile_provider.dart`): «Персонажи»/«Истории» и статистика — `GET /api/authors/<мой id>`, «Коллекции» — `GET /api/favorites` (`fav_at`, свежие сверху), «Подарки» — `GET /api/gifts/received/<id>?before=<next>` (картинка `https://mioko.ai/gifts/shelf/<file>.webp`), «Персоны» — `/api/personas`. Карточка — общий `shared/widgets/catalog_card.dart`. Не сделано: «Статистика» (`/profile-stats/…`), подписчики/подписки (`/follows/<id>/followers|following`), «Поделиться».
 - Скриншоты для README (блок закомментирован, ждёт `docs/screenshots/*.png`).

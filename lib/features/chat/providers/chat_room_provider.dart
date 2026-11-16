@@ -60,6 +60,12 @@ class ChatRoomState {
       !messages.last.fromUser &&
       messages.last.isSaved &&
       messages.length > 1;
+
+  // Первое сообщение персонажа (приветствие) — его сайт удалять не даёт.
+  // Пока не догрузили начало чата, первым его не считаем.
+  String? get firstAssistantId => hasMore
+      ? null
+      : messages.where((m) => !m.fromUser).firstOrNull?.id;
 }
 
 // Что показать пользователю после действия (тост на экране)
@@ -296,6 +302,56 @@ class ChatRoomNotifier extends StateNotifier<ChatRoomState> {
       await load(quiet: true);
     }
   }
+
+  // ── Действия с сообщением (меню по долгому нажатию) ─────────────
+  // Пути и тела — из бандла сайта; `from` = id сообщения, с которого
+  // сервер присылает свежий кусок переписки. Мы просто перечитываем чат.
+
+  // PATCH …/messages/<id>?from=<id> {content}
+  Future<void> editMessage(String id, String content) async {
+    final old = state.messages.where((m) => m.id == id).firstOrNull;
+    _update(id, (m) => m.copyWith(content: content));
+    try {
+      await _dio.patch(
+        '$_base/messages/$id',
+        queryParameters: {'from': id},
+        data: {'content': content},
+      );
+      _ref.invalidate(chatsProvider);
+    } catch (e) {
+      if (old != null) _update(id, (_) => old);
+      rethrow;
+    } finally {
+      await load(quiet: true);
+    }
+  }
+
+  // DELETE …/messages/<id>?from=<id>
+  Future<void> deleteMessage(String id) async {
+    await _dio.delete('$_base/messages/$id', queryParameters: {'from': id});
+    _drop({id});
+    _ref.invalidate(chatsProvider);
+    await load(quiet: true);
+  }
+
+  // POST …/branch?limit=50 {messageId} → {chat: {id…}, messages…}
+  // Копия чата до этого сообщения; возвращает id новой копии
+  Future<String> branchFrom(String id) async {
+    final resp = await _dio.post(
+      '$_base/branch',
+      queryParameters: {'limit': 50},
+      data: {'messageId': int.tryParse(id) ?? id},
+    );
+    _ref.invalidate(chatsProvider);
+    return '${((resp.data as Map)['chat'] as Map)['id']}';
+  }
+
+  // POST …/messages/<id>/report {reason, note}
+  Future<void> reportMessage(String id, String reason, String note) =>
+      _dio.post(
+        '$_base/messages/$id/report',
+        data: {'reason': reason, 'note': note},
+      );
 
   Future<void> deleteChat() async {
     await _dio.delete(_base);

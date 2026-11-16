@@ -7,7 +7,12 @@ import '../providers/profile_provider.dart';
 import '../../../shared/widgets/mioko_icons.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../core/utils/format.dart';
+import '../../../core/api/api_client.dart';
+import '../../../shared/models/media_avatar.dart';
+import '../../../shared/widgets/catalog_card.dart';
+import '../../catalog/models/catalog_item.dart';
 import '../../lorebooks/providers/lorebooks_provider.dart';
+import '../../personas/providers/personas_provider.dart';
 import '../../lorebooks/widgets/lorebook_tile.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -78,11 +83,11 @@ class ProfileScreen extends ConsumerWidget {
         ],
         body: const TabBarView(
           children: [
-            _EmptyTab(text: 'У тебя пока нет персонажей'),
-            _EmptyTab(text: 'У тебя пока нет историй'),
-            _EmptyTab(text: 'У тебя пока нет подарков'),
-            _EmptyTab(text: 'У тебя пока нет коллекций'),
-            _EmptyTab(text: 'У тебя пока нет персон'),
+            _WorksTab(stories: false),
+            _WorksTab(stories: true),
+            _GiftsTab(),
+            _CollectionsTab(),
+            _PersonasTab(),
             _LorebooksTab(),
           ],
         ),
@@ -380,17 +385,369 @@ class _LorebooksTab extends ConsumerWidget {
   }
 }
 
-class _EmptyTab extends StatelessWidget {
-  const _EmptyTab({required this.text});
-  final String text;
+// ── Вкладки профиля: данные те же, что у сайта ───────────────────────
+
+// Карточки сеткой, как на сайте: подпись с количеством сверху, пусто — текст
+class _CardsGrid extends StatelessWidget {
+  const _CardsGrid({
+    required this.items,
+    required this.countText,
+    required this.emptyText,
+    required this.heroPrefix,
+    required this.onRefresh,
+    this.onTap,
+  });
+
+  final List<CatalogItem> items;
+  final String countText;
+  final String emptyText;
+  final String heroPrefix;
+  final Future<void> Function() onRefresh;
+  final void Function(CatalogItem)? onTap;
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: Text(
-      text,
-      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    // Снизу — плавающая панель вкладок
+    final bottom = MediaQuery.paddingOf(context).bottom + 16;
+
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            sliver: SliverToBoxAdapter(
+              child: Text(
+                countText,
+                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
+              ),
+            ),
+          ),
+          if (items.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(32, 24, 32, bottom),
+                child: Text(
+                  emptyText,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: scheme.onSurfaceVariant),
+                ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, bottom),
+              sliver: SliverGrid.builder(
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 180,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 148 / 212,
+                ),
+                itemCount: items.length,
+                itemBuilder: (_, i) {
+                  final item = items[i];
+                  return CatalogCard(
+                    item: item,
+                    heroTag: '$heroPrefix-${item.itemType}-${item.id}',
+                    onTap: onTap == null ? null : () => onTap!(item),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// Загрузка/ошибка одинаковые для всех вкладок
+Widget _async<T>(
+  AsyncValue<T> value,
+  VoidCallback retry,
+  Widget Function(T) data,
+) => value.when(
+  skipLoadingOnRefresh: true,
+  loading: () => const Center(child: CircularProgressIndicator()),
+  error: (e, _) => ErrorView(error: e, compact: true, onRetry: retry),
+  data: data,
+);
+
+String _plural(int n, String one, String few, String many) {
+  final m10 = n % 10, m100 = n % 100;
+  if (m10 == 1 && m100 != 11) return '$n $one';
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return '$n $few';
+  return '$n $many';
+}
+
+// «Персонажи» / «Истории» — мои работы из GET /api/authors/<мой id>
+class _WorksTab extends ConsumerWidget {
+  const _WorksTab({required this.stories});
+  final bool stories;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => _async(
+    ref.watch(myWorksProvider),
+    () => ref.invalidate(myWorksProvider),
+    (w) {
+      final items = stories ? w.stories : w.characters;
+      return _CardsGrid(
+        items: items,
+        countText: stories
+            ? _plural(items.length, 'история', 'истории', 'историй')
+            : _plural(items.length, 'персонаж', 'персонажа', 'персонажей'),
+        emptyText: stories
+            ? 'У тебя пока нет историй'
+            : 'У тебя пока нет персонажей',
+        heroPrefix: stories ? 'profile-stories' : 'profile-characters',
+        onRefresh: () => ref.refresh(myWorksProvider.future),
+      );
+    },
+  );
+}
+
+// «Коллекции» — то, что добавил «В коллекцию» (GET /api/favorites)
+class _CollectionsTab extends ConsumerWidget {
+  const _CollectionsTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => _async(
+    ref.watch(favoritesProvider),
+    () => ref.invalidate(favoritesProvider),
+    (items) => _CardsGrid(
+      items: items,
+      countText: _plural(
+        items.length,
+        'сохранённый',
+        'сохранённых',
+        'сохранённых',
+      ),
+      emptyText: 'В коллекции пока пусто',
+      heroPrefix: 'profile-collections',
+      onRefresh: () => ref.refresh(favoritesProvider.future),
     ),
   );
+}
+
+// «Персоны» — карточками, как на сайте; тап — экран персон
+class _PersonasTab extends ConsumerWidget {
+  const _PersonasTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => _async(
+    ref.watch(personasProvider),
+    () => ref.invalidate(personasProvider),
+    (data) => _CardsGrid(
+      items: [
+        for (final p in data.personas)
+          CatalogItem(
+            itemType: 'persona',
+            id: p.publicId,
+            name: p.name,
+            subtitle: p.description.isEmpty ? null : p.description,
+            // Градиент-заглушка — как у сайта для персон без картинки
+            avatar: MediaAvatar(
+              imageUrl: p.avatarUrl,
+              initial: p.name.isEmpty ? '?' : p.name.characters.first,
+              c1: const Color(0xFF7C5AC0),
+              c2: const Color(0xFF2A1A55),
+            ),
+          ),
+      ],
+      countText: '${data.personas.length} из ${data.limit}',
+      emptyText: 'Персон пока нет',
+      heroPrefix: 'profile-personas',
+      onRefresh: () => ref.refresh(personasProvider.future),
+      onTap: (_) => context.push('/personas'),
+    ),
+  );
+}
+
+// «Подарки» — что мне подарили (GET /api/gifts/received/<id>), по страницам
+class _GiftsTab extends ConsumerStatefulWidget {
+  const _GiftsTab();
+
+  @override
+  ConsumerState<_GiftsTab> createState() => _GiftsTabState();
+}
+
+class _GiftsTabState extends ConsumerState<_GiftsTab> {
+  // Догруженные страницы («Показать ещё») поверх первой из провайдера
+  final _more = <ReceivedGift>[];
+  String? _next;
+  bool _loadingMore = false;
+  bool _usedFirstNext = false;
+
+  Future<void> _loadMore(String before) async {
+    setState(() => _loadingMore = true);
+    try {
+      final user = await ref.read(profileProvider.future);
+      final resp = await ref
+          .read(apiClientProvider)
+          .get(
+            '/api/gifts/received/${user.id}',
+            queryParameters: {'before': before},
+          );
+      if (!mounted) return;
+      final data = resp.data as Map<String, dynamic>;
+      setState(() {
+        _more.addAll([
+          for (final g in (data['gifts'] as List? ?? const []))
+            ReceivedGift.fromJson(g as Map<String, dynamic>),
+        ]);
+        _next = data['next']?.toString();
+        _usedFirstNext = true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Не удалось загрузить подарки')),
+      );
+    } finally {
+      if (mounted) setState(() => _loadingMore = false);
+    }
+  }
+
+  Future<void> _refresh() async {
+    setState(() {
+      _more.clear();
+      _next = null;
+      _usedFirstNext = false;
+    });
+    final _ = await ref.refresh(receivedGiftsProvider.future);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final bottom = MediaQuery.paddingOf(context).bottom + 16;
+
+    return _async(
+      ref.watch(receivedGiftsProvider),
+      () => ref.invalidate(receivedGiftsProvider),
+      (page) {
+        final gifts = [...page.gifts, ..._more];
+        final next = _usedFirstNext ? _next : page.next;
+        return RefreshIndicator(
+          onRefresh: _refresh,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                sliver: SliverToBoxAdapter(
+                  child: Text(
+                    _plural(page.total, 'подарок', 'подарка', 'подарков'),
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ),
+              if (gifts.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(32, 24, 32, bottom),
+                    child: Text(
+                      'Тебе пока не дарили подарков',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: scheme.onSurfaceVariant),
+                    ),
+                  ),
+                )
+              else ...[
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  sliver: SliverGrid.builder(
+                    gridDelegate:
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 130,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          childAspectRatio: 0.78,
+                        ),
+                    itemCount: gifts.length,
+                    itemBuilder: (_, i) => _GiftTile(gift: gifts[i]),
+                  ),
+                ),
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(16, 12, 16, bottom),
+                  sliver: SliverToBoxAdapter(
+                    child: next == null
+                        ? const SizedBox.shrink()
+                        : Center(
+                            child: _loadingMore
+                                ? const CircularProgressIndicator()
+                                : FilledButton.tonal(
+                                    onPressed: () => _loadMore(next),
+                                    child: const Text('Показать ещё'),
+                                  ),
+                          ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _GiftTile extends StatelessWidget {
+  const _GiftTile({required this.gift});
+  final ReceivedGift gift;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final from = gift.hidden || gift.senderName == null
+        ? 'Аноним'
+        : gift.senderName!;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          Expanded(
+            child: Image.network(
+              gift.imageUrl,
+              fit: BoxFit.contain,
+              // Нет картинки — показываем эмодзи подарка
+              errorBuilder: (_, _, _) => Center(
+                child: Text(gift.emoji, style: const TextStyle(fontSize: 40)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            gift.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Text(
+            'от $from',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _TabBarDelegate extends SliverPersistentHeaderDelegate {
