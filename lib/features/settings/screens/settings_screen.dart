@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -497,6 +498,11 @@ class _MonetTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Monet — только Android: на iPhone пункт не показываем вовсе
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return const SizedBox.shrink();
+    }
+
     final supported = ref.watch(monetSupportedProvider).valueOrNull ?? false;
 
     return SwitchListTile(

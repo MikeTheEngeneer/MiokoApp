@@ -1,0 +1,43 @@
+# Сборка неподписанного .ipa на macOS-машине GitHub.
+# Запуск вручную: вкладка Actions → «iOS build» → Run workflow.
+# Готовый файл — в разделе Artifacts внизу страницы запуска (хранится 14 дней).
+# Подписывает и ставит на iPhone уже SideStore/AltServer со своим Apple ID.
+name: iOS build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Скачать код
+        uses: actions/checkout@v4
+
+      - name: Поставить Flutter (та же версия, что локально)
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.50.0
+          channel: stable
+          cache: true
+
+      - name: Зависимости
+        run: flutter pub get
+
+      - name: Сборка без подписи
+        run: flutter build ios --release --no-codesign
+
+      - name: Упаковать в .ipa
+        run: |
+          mkdir -p Payload
+          cp -R build/ios/iphoneos/Runner.app Payload/
+          zip -qr MiokoApp.ipa Payload
+
+      - name: Выложить .ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: MiokoApp-ipa
+          path: MiokoApp.ipa
+          retention-days: 14
